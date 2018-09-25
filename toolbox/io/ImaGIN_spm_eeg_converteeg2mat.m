@@ -246,6 +246,7 @@ function D = ImaGIN_convert_brainstorm(InputFile, FileFormat, OutputFile, SelCha
             isSEEG = 0;
         else
             iSel = iEEG(iSelEeg);
+            iEcg = iEEG(iEcg);
         end
     % Selected channels are passed in input
     else
