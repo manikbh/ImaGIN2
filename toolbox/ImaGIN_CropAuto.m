@@ -127,16 +127,23 @@ for c=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'AA','A'); noteName = strrep(noteName,'_MA_','_'); %some MIL notes 
     keepN = ''; noteName = strrep(noteName,'stim','');  noteName = strrep(noteName,'Stim','');
     noteName = strrep(noteName,'TextNote:',''); % for BRN datasets
+    
+    [numZ, numZI] = regexp(noteName,'\d*','Match');
+    
     try
         fundc = strfind(noteName,'_');
         lNumb = strfind(noteName,noteName(1:fundc(1)-1));
+        iLastLetter = find(~ismember(noteName(1:fundc(1)-1),   '0123456789'), 1, 'last');
         keepN = noteName(1:fundc(1)-1);
         if(numel(lNumb)) == 2 && ~strcmp(keepN,'A') && ~strcmp(keepN,'H') && ~isempty(keepN)            
-            noteName = strrep(noteName,keepN,'CHNAME');            
+            noteName = strrep(noteName,keepN,'CHNAME'); 
+        elseif iLastLetter > 0 && iLastLetter > numZI(1)
+             keepN = noteName(1:iLastLetter);
+             noteName = strrep(noteName,keepN,'CHNAME');
         end  
     end   
     %% Avoid number starting with 0: 01 02 03,...
-    [numZ, numZI] = regexp(noteName,'\d*','Match');
+    
     if numel(numZ) >= 2
         noteName =  char(strrep(noteName,numZ(1), num2str(str2double(numZ(1)))));
         noteName =  char(strrep(noteName,numZ(2), num2str(str2double(numZ(2)))));        
@@ -155,7 +162,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
     %% check if stim electr numbers are concatenated without space or -
     
     numbr = regexp(noteName,'\d*','Match');
-    if numel(numbr) > 2
+    if numel(numbr) > 2 && numel(numbr) <= 5
         if str2double(numbr(2))~= str2double(numbr(1)) + 1 && str2double(numbr(1))~= str2double(numbr(2)) + 1 
             if numel(numbr{1}) == 2
                  if numel(numbr{2}) ~= 3 && numel(numbr{2}) ~= 2 && numel(numbr{2}) ~= 4
@@ -350,7 +357,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
         noteName = char(strcat(subn1,noteName(idxn1+1:end)));
     end 
     
-    noteName = strrep(noteName,'CHNAME',keepN);  
+    noteName = strrep(noteName,'CHNAME',upper(keepN));  
     
     ptrn = ',';
     if strncmp(noteName,ptrn,1)
