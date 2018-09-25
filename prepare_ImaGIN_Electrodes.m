@@ -56,13 +56,31 @@ if strcmp(source, 'intranat')
         end
         
     else
-        if strcmp(polarity, 'bipolar')  %has to be fixed for the case where the electrode name includes numbers
-        bip=[];
+        if strcmp(polarity, 'bipolar')  % fixed even for the case where the electrode name includes numbers
+        bip=[];                         
         for i=4:length(nametmp)
             if ~isempty(strfind(nametmp{i},'-')) 
-                ind1 = regexp(lower(nametmp{i}),'[a-z\'']');
+                %ind1 = regexp(lower(nametmp{i}),'[a-z\'']');
                 sep = regexp(nametmp{i},'-');
-                ind2 = regexp(nametmp{i},'\d');
+                
+                iLastLetter1 = find(~ismember(nametmp{i}(1:sep-1),   '0123456789'), 1, 'last'); %VT
+                iLastLetter2 = find(~ismember(nametmp{i}(sep+1:end), '0123456789'), 1, 'last');
+                if isempty(iLastLetter1)
+                    iLastLetter1 = 0;
+                end
+                if isempty(iLastLetter2)
+                    iLastLetter2 = 0;
+                end
+                if iLastLetter1 > 0 && iLastLetter2 > 0
+                    name     = [lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(iLastLetter1+1:sep-1) lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(sep+iLastLetter2+1:end)];
+                    name2    = [lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(iLastLetter1+1:sep-1) lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(sep+iLastLetter2+1:end)];
+                    Name{1}  = cat(1,Name{1},{name});
+                    Name{2}  = cat(1,Name{2},{name2});
+                    Position = cat(1,Position,str2num(positiontmp{i}));
+                end
+                %{
+                % VT
+                %ind2 = regexp(nametmp{i},'\d');
                 if ~isempty(ind1) && ~isempty(ind2)
                     name = [lower(nametmp{i}(ind1 < sep)) num2str(str2num(nametmp{i}(ind2(ind2 < sep)))) lower(nametmp{i}(ind1 < sep)) num2str(str2num(nametmp{i}(ind2(ind2 > sep))))];
                     name2 = [lower(nametmp{i}(ind1 < sep)) nametmp{i}(ind2(ind2 < sep)) lower(nametmp{i}(ind1 < sep)) nametmp{i}(ind2(ind2 > sep))];
@@ -70,6 +88,7 @@ if strcmp(source, 'intranat')
                     Name{2} = cat(1,Name{2},{name2});
                     Position = cat(1,Position,str2num(positiontmp{i}));
                 end
+                %}
             end
         end
         end
