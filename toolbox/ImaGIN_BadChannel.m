@@ -103,7 +103,10 @@ else
     crFname = D.fname;
     crFname = strrep(crFname,'welectrodes_','');
     undsc   = strfind(crFname,'_');
-    if numel(undsc) == 4
+    Pulse   = strfind(crFname,'us');
+    Amp     = strfind(crFname,'Am');
+    Frq     = strfind(crFname,'Hz');
+    if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
         sfix = crFname(1:undsc(1)-1);
         [numb,id] = regexp(sfix,'\d*','Match');
         chl = sfix(1:id(1)-1);
