@@ -167,13 +167,14 @@ function D = ImaGIN_convert_brainstorm(InputFile, FileFormat, OutputFile, SelCha
                 end
                 % Rennes
                 chName = chName(setdiff(1:length(chName), strfind(chName,'.')));
-                % Remove zeros
-                v_num = find((chName=='0') | (chName=='1') | (chName=='2') | (chName=='3') | (chName=='4') | (chName=='5') | (chName=='6') | (chName=='7') | (chName=='8') | (chName=='9'));
-                if (length(v_num) > 1)
-                    if (v_num(2) == v_num(1) + 1) && strcmp(chName(v_num(1)), '0')
-                        chName = chName(setdiff(1:length(chName), v_num(1)));
-                    end
-                end
+% REMOVED 28/09/2018: for similar processing with other file formats
+%                 % Remove zeros
+%                 v_num = find((chName=='0') | (chName=='1') | (chName=='2') | (chName=='3') | (chName=='4') | (chName=='5') | (chName=='6') | (chName=='7') | (chName=='8') | (chName=='9'));
+%                 if (length(v_num) > 1)
+%                     if (v_num(2) == v_num(1) + 1) && strcmp(chName(v_num(1)), '0')
+%                         chName = chName(setdiff(1:length(chName), v_num(1)));
+%                     end
+%                 end
                 ChannelMat.Channel(i).Name = chName;
             end
         % DELTAMED .bin
