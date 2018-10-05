@@ -15,7 +15,27 @@ function D = ImaGIN_Electrode(S)
 % Copyright (c) 2000-2018 Inserm U1216
 % =============================================================================-
 %
-% Authors: Olivier David
+% Authors: Olivier David, Francois Tadel
+
+% % Test findChannel()
+% ListCSV = {'A01', 'A02', 'A03', 'A04', 'A05', 'A18', 'B''01', 'B''02', 'B''03', 'Bp04', 'T101', 'T111', 'V101', 'V201'};
+% disp(['A01: ', num2str(findChannel('A01', ListCSV))])
+% disp(['a01: ', num2str(findChannel('a01', ListCSV))])
+% disp(['a1: ', num2str(findChannel('a1', ListCSV))])
+% disp(['a 1: ', num2str(findChannel('a 1', ListCSV))])
+% disp(['A18: ', num2str(findChannel('A18', ListCSV))])
+% disp(['B''1: ', num2str(findChannel('B''1', ListCSV))])
+% disp(['b''01: ', num2str(findChannel('b''01', ListCSV))])
+% disp(['Bp2: ', num2str(findChannel('Bp2', ListCSV))])
+% disp(['B,3: ', num2str(findChannel('B,3', ListCSV))])
+% disp(['B, 3: ', num2str(findChannel('B, 3', ListCSV))])
+% disp(['T111: ', num2str(findChannel('T111', ListCSV))])
+% disp(['T11: ', num2str(findChannel('T11', ListCSV))])
+% disp(['V101: ', num2str(findChannel('V101', ListCSV))])
+% disp(['V11: ', num2str(findChannel('V11', ListCSV))])
+% disp(['V101: ', num2str(findChannel('V101', ListCSV))])
+% disp(['V21: ', num2str(findChannel('V21', ListCSV))])
+% return;
 
 % Get file to edit
 try
@@ -29,34 +49,60 @@ end
 P = spm_str_manip(deblank(t(1,:)),'h');
 
 % Read sensor names
+Position = [];
 try
     Name = S.Name;
 catch
     try
         filename = S.filenameName;
-        Name = readName(filename);
     catch
-        filename = spm_select(1, '\.txt$', 'Select txt file for electrode names', {}, P);
-        Name = readName(filename);
+        filename = spm_select(1, '\.(csv|txt)$', 'Select txt file for electrode names', {}, P);
+    end
+    % Test for input file
+    if isempty(filename) || ~exist(filename, 'file')
+        disp('ImaGIN> ERROR: Invalid input file name.');
+        D = [];
+        return
+    end
+    % Detect file type: _Name.txt/_Pos.txt or .csv
+    [fPath, fBase, fExt] = fileparts(filename);
+    % Read file
+    switch lower(fExt)
+        case '.txt'
+            Name = readName(filename);
+        case '.csv'
+            [Name, Position] = readCsv(filename);
+        otherwise 
+            disp('ImaGIN> ERROR: Invalid input file type.');
+            D = [];
+            return
+    end
+    if isempty(Name)
+        disp('ImaGIN> ERROR: No contact names in input files.');
+        D = [];
+        return
     end
 end
 
 % Read sensor positions
-try
-    Position = S.Position;
-catch
-    try 
-        filename = S.filenamePos;
-        Position = load(filename);
+if isempty(Position)
+    try
+        Position = S.Position;
     catch
-        filename = spm_select(1, '\.txt$', 'Select txt file for electrode positions', {}, P);
-        Position = load(filename);
+        try 
+            filename = S.filenamePos;
+            Position = load(filename);
+        catch
+            filename = spm_select(1, '\.txt$', 'Select txt file for electrode positions', {}, P);
+            Position = load(filename);
+        end
     end
 end
 
+
 % Set positions
-chFound = {};
 chNotFound = {};
+chMatchLog = {};
 for i0 = 1:size(t,1)
     T = deblank(t(i0,:));
     D = spm_eeg_load(T);
@@ -81,11 +127,15 @@ for i0 = 1:size(t,1)
             else
                 iChanPos = findChannel(Sensors.label{i1}, Name);
             end
-            % If channel was found: get its position
+            % If channel was found
             if ~isempty(iChanPos)
+                % Copy position
                 Sensors.elecpos(i1,:) = Position(iChanPos,:);
                 Sensors.chanpos(i1,:) = Position(iChanPos,:);
-                chFound{end+1} = Sensors.label{i1};
+                % Copy channel name from input name file (ADDED BY FT 5-Oct-2018)
+                chMatchLog{i1,1} = Sensors.label{i1};
+                chMatchLog{i1,2} = Name{i1};
+                Sensors.label{i1} = Name{iChanPos};
             else
                 disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
                 chNotFound{end+1} = Sensors.label{i1};
@@ -94,42 +144,46 @@ for i0 = 1:size(t,1)
             Sensors.chantype{i1}='ecg';
         end
     end
+    % Electrodes present in the CSV but not found in the SEEG recordings
+    [tmp, tmp, chTagsCSV] = ImaGIN_select_channels(Name);
+    [tmp, tmp, chTagsSEEG] = ImaGIN_select_channels(chMatchLog(:,2)');
+    elecUnused = setdiff(unique(chTagsCSV), unique(chTagsSEEG));
     
-    % Add entries in log file 
-    if isfield(S, 'FileOut') && ~isempty(S.FileOut)
-        if ~isempty(chFound)
-            ImaGIN_save_log(fullfile(S.FileOut), 'Positions added for channels:', chFound);
-        end
-        if ~isempty(chNotFound)
-            ImaGIN_save_log(fullfile(S.FileOut), 'Positions not found for channels:', chNotFound);
-        end
-    else       
-        if ~isempty(chFound)
-            ImaGIN_save_log(fullfile(D), 'Positions added for channels:', chFound);
-        end
-        if ~isempty(chNotFound)
-            ImaGIN_save_log(fullfile(D), 'Positions not found for channels:', chNotFound);
-        end
+    % Add entries in a NEW log file
+    if ~isempty(chMatchLog)
+        ImaGIN_save_log(T, 'Positions added for channels:', chMatchLog(:,1));
     end
-end
-
-try
-    fid = fopen(S.FileTxtOut,'w');
-    recording_output = (D.sensors('eeg').label);
-    fprintf(fid,'%s\n',recording_output{:});
-    fclose(fid);
-catch
-    disp('recording sensors not saved.')
-end
-
-D = sensors(D,'EEG',Sensors);
-
-if isfield(S, 'FileOut') && ~isempty(S.FileOut)
-    D2 = clone(D,S.FileOut,[D.nchannels D.nsamples D.ntrials]); % Create a new .mat/dat file (F-TRACT convention)
-    D2(:,:,:) = D(:,:,:);
-    save(D2);
-else
-    save(D); % Update .mat file
+    if ~isempty(chNotFound)
+        ImaGIN_save_log(T, 'Unmatched SEEG channels:', chNotFound);
+    end
+    if ~isempty(elecUnused)
+        ImaGIN_save_log(T, 'Unmatched CSV electrodes:', elecUnused);
+    end
+    
+    % Match file: Correspondance between SEEG-CSV-LENA conventions
+    try
+        fid = fopen(S.FileTxtOut,'w');
+        fprintf(fid,'SEEG,CSV\n');
+        for i = 1:size(chMatchLog,1)
+            fprintf(fid,'%s,%s\n', chMatchLog{i,1}, chMatchLog{i,2});
+        end
+        fclose(fid);
+    catch
+        disp('recording sensors not saved.')
+    end
+    
+    % Replace channel definition in input .mat/.dat file
+    D = sensors(D, 'EEG', Sensors);
+    
+    % Create a new .mat/dat file (F-TRACT convention)
+    if (nargin >= 1) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
+        D2 = clone(D,S.FileOut,[D.nchannels D.nsamples D.ntrials]); 
+        D2(:,:,:) = D(:,:,:);
+        save(D2);
+    % Update existing .mat file
+    else
+        save(D);
+    end
 end
 
 end
@@ -151,13 +205,97 @@ function Name = readName(filename)
 end
 
 
+%% Read name and position from .csv
+function [Name, Pos] = readCsv(filename)
+    Name = {};
+    Pos = [];
+    % Open file
+    fid = fopen(filename);
+    i1 = 1;
+    % Skip two header lines
+    fgetl(fid);
+    fgetl(fid);
+    % Read column names (tab-separated file)
+    colNames = strsplit(fgetl(fid), '\t');
+    iColName = find(strcmpi(colNames, 'contact'));
+    iColPos = find(strcmpi(colNames, 'T1pre Scanner Based'));
+    if isempty(iColName) || isempty(iColPos)
+        disp('ImaGIN> ERROR: Invalid CSV file: No columns "T1pre Scanner Based" or "contact".');
+        return;
+    end
+    % Read contact by contact
+    while 1
+        % Read line
+        tmp = fgetl(fid);
+        if isequal(tmp, -1) || isempty(tmp)
+            break;
+        end
+        % Split by columns (tab-separated file)
+        tmp = strsplit(tmp, '\t');
+        Name{i1} = tmp{iColName};
+        Pos(i1,1:3) = str2num(tmp{iColPos});
+        i1 = i1 + 1;
+    end
+    fclose(fid);
+end
+
+
 %% Find channel name in a list
 function iChanPos = findChannel(Label, List)
+    % Remove spaces
+    Label(Label == ' ') = [];
+    % Replacing ' with p
+    Label = strrep(Label, '''', 'p');
+    List = strrep(List, '''', 'p');
+    % Replacing , with p
+    Label = strrep(Label, ',', 'p');
+    List = strrep(List, ',', 'p');
     % Look for channel in position file
     iChanPos = find(strcmpi(Label, List));
-    % Channel not found: try replacing ' by p
-    if isempty(iChanPos)
-        iChanPos = find(strcmpi(strrep(Label,'''','p'), strrep(List,'''','p')));
+    if ~isempty(iChanPos)
+        return;
+    end    
+    % Channel not found: try adding missing 0 (A1=>A01, T11=>T101)
+    % Find the last letter in the name
+    iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
+    % If there is not electrode label or no index: wrong naming
+    if isempty(iLastLetter) || (iLastLetter == length(Label))
+        return;
+    end
+    % Find channel index
+    chLabel = Label(1:iLastLetter);
+    chInd = str2num(Label(iLastLetter+1:end));
+    % If label is > 100: Add 1 or 2 at the end of the label
+    if (chInd > 220)
+        return;
+    elseif (chInd > 200)
+        chLabel = [chLabel '2'];
+        chInd = chInd - 200;
+    elseif (chInd > 100)
+        chLabel = [chLabel '1'];
+        chInd = chInd - 100;
+    elseif (chInd > 20)
+        chLabel = [chLabel '2'];
+        chInd = chInd - 20;
+    end
+    
+    % Try with a zero
+    iChanPos = find(strcmpi(sprintf('%s%02d', chLabel, chInd), List));
+    if ~isempty(iChanPos)
+        return;
+    end
+    % Try without the zero
+    iChanPos = find(strcmpi(sprintf('%s%d', chLabel, chInd), List));
+    if ~isempty(iChanPos)
+        return;
+    end
+
+    % For channel indices between 11 and 19, try to interpret them as if electrode name was ending with a 1
+    if (chInd >= 11) && (chInd <= 19)
+        iChanPos = find(strcmpi(sprintf('%s%02d', [chLabel '1'], chInd - 10), List));
+        if ~isempty(iChanPos)
+            return;
+        end
     end
 end
 
