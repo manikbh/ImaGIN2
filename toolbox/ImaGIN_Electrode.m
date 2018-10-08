@@ -18,23 +18,30 @@ function D = ImaGIN_Electrode(S)
 % Authors: Olivier David, Francois Tadel
 
 % % Test findChannel()
-% ListCSV = {'A01', 'A02', 'A03', 'A04', 'A05', 'A18', 'B''01', 'B''02', 'B''03', 'Bp04', 'T101', 'T111', 'V101', 'V201'};
-% disp(['A01: ', num2str(findChannel('A01', ListCSV))])
-% disp(['a01: ', num2str(findChannel('a01', ListCSV))])
-% disp(['a1: ', num2str(findChannel('a1', ListCSV))])
-% disp(['a 1: ', num2str(findChannel('a 1', ListCSV))])
-% disp(['A18: ', num2str(findChannel('A18', ListCSV))])
-% disp(['B''1: ', num2str(findChannel('B''1', ListCSV))])
-% disp(['b''01: ', num2str(findChannel('b''01', ListCSV))])
-% disp(['Bp2: ', num2str(findChannel('Bp2', ListCSV))])
-% disp(['B,3: ', num2str(findChannel('B,3', ListCSV))])
-% disp(['B, 3: ', num2str(findChannel('B, 3', ListCSV))])
-% disp(['T111: ', num2str(findChannel('T111', ListCSV))])
-% disp(['T11: ', num2str(findChannel('T11', ListCSV))])
-% disp(['V101: ', num2str(findChannel('V101', ListCSV))])
-% disp(['V11: ', num2str(findChannel('V11', ListCSV))])
-% disp(['V101: ', num2str(findChannel('V101', ListCSV))])
-% disp(['V21: ', num2str(findChannel('V21', ListCSV))])
+% ListCSV = {'A01', 'A02', 'A03', 'A04', 'A05', 'A18', 'Bp01', 'Bp02', 'BP01', 'BP04', 'T101', 'T111', 'V101', 'V201'};
+% disp(['A01: ',   ListCSV{findChannel('A01', ListCSV)}])
+% disp(['a01: ',   ListCSV{findChannel('a01', ListCSV)}])
+% disp(['a1: ',    ListCSV{findChannel('a1', ListCSV)}])
+% disp(['a 1: ',   ListCSV{findChannel('a 1', ListCSV)}])
+% disp(['A18: ',   ListCSV{findChannel('A18', ListCSV)}])
+% disp(['B''1: ',  ListCSV{findChannel('B''1', ListCSV)}])
+% disp(['b''01: ', ListCSV{findChannel('b''01', ListCSV)}])
+% disp(['Bp01: ',  ListCSV{findChannel('Bp01', ListCSV)}])
+% disp(['Bp1: ',   ListCSV{findChannel('Bp1', ListCSV)}])
+% disp(['bp1: ',   ListCSV{findChannel('bp1', ListCSV)}])
+% disp(['B,1: ',   ListCSV{findChannel('B,1', ListCSV)}])
+% disp(['B, 01: ',  ListCSV{findChannel('B, 01', ListCSV)}])
+% disp(['BP01: ',  ListCSV{findChannel('BP01', ListCSV)}])
+% disp(['Bp2: ',   ListCSV{findChannel('Bp2', ListCSV)}])
+% disp(['B''2: ',   ListCSV{findChannel('B''2', ListCSV)}])
+% disp(['B, 2: ',  ListCSV{findChannel('B, 2', ListCSV)}])
+% disp(['BP4: ',   ListCSV{findChannel('BP4', ListCSV)}])
+% disp(['T111: ',  ListCSV{findChannel('T111', ListCSV)}])
+% disp(['T11: ',   ListCSV{findChannel('T11', ListCSV)}])
+% disp(['V101: ',  ListCSV{findChannel('V101', ListCSV)}])
+% disp(['V11: ',   ListCSV{findChannel('V11', ListCSV)}])
+% disp(['V101: ',  ListCSV{findChannel('V101', ListCSV)}])
+% disp(['V21: ',   ListCSV{findChannel('V21', ListCSV)}])
 % return;
 
 % Get file to edit
@@ -241,9 +248,36 @@ end
 
 
 %% Find channel name in a list
-function iChanPos = findChannel(Label, List)
+function iChanPos = findChannel(Label, List, caseType)
+    % Test three different case versions
+    % The goal is to be able to handle a List containing both electrodes L' ("Lp") and LP ("LP")
+    % The List provided here comes from a .csv with this convention: only capitals except for the "p" for "'"
+    if (nargin < 3) || isempty(caseType)
+        iChanPos = findChannel(Label, List, 'no_change');
+        if isempty(iChanPos)
+            iChanPos = findChannel(Label, List, 'all_upper');
+        end
+        if isempty(iChanPos)
+            iChanPos = findChannel(Label, List, 'upper_except_p');
+        end
+        return;
+    end
+    
     % Remove spaces
     Label(Label == ' ') = [];
+    % Switch case type
+    switch (caseType)
+        case 'no_change'
+            % Nothing to change
+        case 'all_upper'
+            Label = upper(Label);
+        case 'upper_except_p'
+            iP = find(Label == 'p');
+            Label = upper(Label);
+            if (length(iP) == 1) && (iP >= 2)
+                Label(iP) = 'p';
+            end
+    end
     % Replacing ' with p
     Label = strrep(Label, '''', 'p');
     List = strrep(List, '''', 'p');
@@ -251,7 +285,7 @@ function iChanPos = findChannel(Label, List)
     Label = strrep(Label, ',', 'p');
     List = strrep(List, ',', 'p');
     % Look for channel in position file
-    iChanPos = find(strcmpi(Label, List));
+    iChanPos = find(strcmp(Label, List));
     if ~isempty(iChanPos)
         return;
     end    
@@ -280,19 +314,19 @@ function iChanPos = findChannel(Label, List)
     end
     
     % Try with a zero
-    iChanPos = find(strcmpi(sprintf('%s%02d', chLabel, chInd), List));
+    iChanPos = find(strcmp(sprintf('%s%02d', chLabel, chInd), List));
     if ~isempty(iChanPos)
         return;
     end
     % Try without the zero
-    iChanPos = find(strcmpi(sprintf('%s%d', chLabel, chInd), List));
+    iChanPos = find(strcmp(sprintf('%s%d', chLabel, chInd), List));
     if ~isempty(iChanPos)
         return;
     end
 
     % For channel indices between 11 and 19, try to interpret them as if electrode name was ending with a 1
     if (chInd >= 11) && (chInd <= 19)
-        iChanPos = find(strcmpi(sprintf('%s%02d', [chLabel '1'], chInd - 10), List));
+        iChanPos = find(strcmp(sprintf('%s%02d', [chLabel '1'], chInd - 10), List));
         if ~isempty(iChanPos)
             return;
         end
