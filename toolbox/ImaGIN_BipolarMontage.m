@@ -63,7 +63,7 @@ for i0=1:size(Filename,1)
             tmp4=str2num(Name{i1+1}(min([findstr(Name{i1+1},'0') findstr(Name{i1+1},'1') findstr(Name{i1+1},'2') findstr(Name{i1+1},'3') findstr(Name{i1+1},'4') findstr(Name{i1+1},'5') findstr(Name{i1+1},'6') findstr(Name{i1+1},'7') findstr(Name{i1+1},'8') findstr(Name{i1+1},'9')]):end));
             if strcmp(tmp1,tmp2)&tmp3+1==tmp4
                 Cpos2full(:,end+1)=mean(Position([i1 i1+1],:))';
-                Cnamesfull{1,end+1}=[Name{i1+1} Name{i1}];
+                Cnamesfull{1,end+1}=[Name{i1} '-' Name{i1+1}];
                 bipole=[bipole [i1+1;i1]];
             end          
         end
