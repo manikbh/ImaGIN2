@@ -134,14 +134,29 @@ for i0 = 1:size(t,1)
             else
                 iChanPos = findChannel(Sensors.label{i1}, Name);
             end
+            % If the channel was already found in the list before: check the best option based on the case
+            if ~isempty(iChanPos) && ~isempty(chMatchLog)
+                iPrevious = find(strcmp(Name{iChanPos}, chMatchLog(:,2)));
+                if ~isempty(iPrevious)
+                    % If the new channel has strictly the same case, or if it corresponds to a replaced "prime": remove the previous match
+                    if isequal(Sensors.label{i1}, Name{iChanPos}) || ...
+                       (any(Sensors.label{i1} == '''') && strcmp(strrep(upper(Sensors.label{i1}), '''', 'p'), Name{iChanPos}))
+                        disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} 'discarded.']);
+                        chMatchLog(iPrevious,:) = [];
+                    else
+                        disp(['ImaGIN> WARNING: Channel name conflict: ' chMatchLog{iPrevious,1} ' matched with ' Name{iChanPos} ', ' Sensors.label{i1} ' discarded.']);
+                        iChanPos = [];
+                    end
+                end
+            end
             % If channel was found
             if ~isempty(iChanPos)
                 % Copy position
                 Sensors.elecpos(i1,:) = Position(iChanPos,:);
                 Sensors.chanpos(i1,:) = Position(iChanPos,:);
                 % Copy channel name from input name file (ADDED BY FT 5-Oct-2018)
-                chMatchLog{i1,1} = Sensors.label{i1};
-                chMatchLog{i1,2} = Name{i1};
+                chMatchLog{end+1,1} = Sensors.label{i1};
+                chMatchLog{end,2} = Name{iChanPos};
                 Sensors.label{i1} = Name{iChanPos};
             else
                 disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
