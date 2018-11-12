@@ -15,15 +15,29 @@ function D = ImaGIN_CropAuto(S)
 %
 % Authors: Viateur Tuyisenge & Olivier David
 
-sFile = S.dataset;
-DirOut= S.DirFileOut;
-thisN = S.StimName; % stim event to crop individually 
-try
-    D = spm_eeg_load(sFile); % Load the converted file .mat
-catch
-    sFile = spm_select(1, '\.mat$', 'Select data file');
-    D=spm_eeg_load(sFile);
+if (nargin >= 1) && isfield(S, 'dataset') && ~isempty(S.dataset)
+    sFile = S.dataset;
+else
+    sFile = spm_select(1, '\.mat$', 'Select EEG mat file');
+    if isempty(sFile)
+        return;
+    end
 end
+
+if (nargin >= 1) && isfield(S, 'DirFileOut') && ~isempty(S.DirFileOut)
+    DirOut= S.DirFileOut;
+else
+    [DirOut, ~, ~] = fileparts(sFile);
+end
+
+if (nargin >= 1) && isfield(S, 'StimName') && ~isempty(S.StimName)
+thisN = S.StimName; % stim event to crop individually 
+else
+    thisN = '';
+end
+
+D = spm_eeg_load(sFile); % Load the converted file .mat
+
 %% Find existing crop files in DirOut
 matExist = dir(fullfile(DirOut,'*.mat')); %Delete all cropped text file
 matExist = {matExist.name};
@@ -384,6 +398,29 @@ for c=1:length(KeepEvent) % Navigate all stim events
     noteNameNew=noteName;
     noteNameNew(1:tmpdi(1)-1)=upper(noteNameNew(1:tmpdi(1)-1));
     noteNameNew = strrep(noteNameNew,'''','p');     %to avoid ' in the name
+        
+    % Change of naming convention: Ap12_3mA_1Hz_1000us_1 becomes Ap1-Ap2_3mA_1Hz_1000us_1
+    idxScore = strfind(noteNameNew,'_');
+    if isempty(idxScore)
+        return;
+    end
+    Label    = noteNameNew(1:idxScore(1)-1);
+    iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
+    if isempty(iLastLetter) || (iLastLetter == length(Label))
+        return;
+    end
+    chLabel = Label(1:iLastLetter);
+    chInd = Label(iLastLetter+1:end);
+    if numel(chInd)==2
+        noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, ['0' chInd(2)], noteNameNew(idxScore(1):end));  
+    elseif numel(chInd)==3 
+        noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, chInd(2:3), noteNameNew(idxScore(1):end)); 
+    elseif numel(chInd)==4
+        noteNameNew = strcat(chLabel,chInd(1:2), '-',chLabel, chInd(3:4), noteNameNew(idxScore(1):end));
+    elseif numel(chInd)==6
+        noteNameNew = strcat(chLabel,chInd(1:3), '-',chLabel, chInd(4:6), noteNameNew(idxScore(1):end));
+    end
+    
     S.FileOut=  fullfile(DirOut, strcat(noteNameNew,'.txt'));
     
     %{  

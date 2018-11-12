@@ -30,9 +30,16 @@ bPrefix = strcat(badDir,'/',cutName);
 try
     bIdx = load(strcat(bPrefix,'_bIdx.txt'));
 catch
+    disp('Bad channel indices was not loaded');
     bIdx = [];
 end
-
+elec= sensors(D,'eeg');  % add channels without positions into bad channels
+pos = elec.elecpos; 
+idxNaN = find(isnan(pos(:,1)));
+if ~isempty(idxNaN)
+    bIdx = [bIdx;idxNaN];
+    bIdx = sort(unique(bIdx));
+end
 T = readtable(strcat(bPrefix,'.csv'));
 tNote = cell(size(T,1),1);
 tNote(:) = {'Good'};

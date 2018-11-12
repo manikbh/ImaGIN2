@@ -14,19 +14,33 @@ function ImaGIN_Validate_StimNames(S)
 % =============================================================================-
 %
 % Authors: Viateur Tuyisenge & Olivier David
-   
-sFile = S.dataset;
-pulseDefault = str2double(S.defaultPulseDuration);
 
-patientCode = S.patientName;
+if (nargin >= 1) && isfield(S, 'dataset') && ~isempty(S.dataset)
+    sFile = S.dataset;
+else
+    sFile = spm_select(1, '\.mat$', 'Select EEG mat file');
+    if isempty(sFile)
+        return;
+    end
+end
+ 
+if (nargin >= 1) && isfield(S, 'defaultPulseDuration') && ~isempty(S.defaultPulseDuration)
+    pulseDefault = str2double(S.defaultPulseDuration);
+else
+   pulseDefault = NaN; 
+end
+
+if (nargin >= 1) && isfield(S, 'patientName') && ~isempty(S.patientName)
+    patientCode = S.patientName;
+else
+   patientCode = ''; 
+end
 
 fprintf('MESSAGE: Got default pulse duration = %d \n', pulseDefault);
 try
     D = spm_eeg_load(sFile); % Load the converted file .mat
 catch
     error('File %s NOT loaded \n', sFile);
-    %sFile = spm_select(1, '\.mat$', 'Select data file');
-    %D=spm_eeg_load(sFile);
 end
 evt = events(D);
 evsize = size(evt,2);        % Number of events
@@ -165,8 +179,10 @@ if mil_flag == 0
             pval = unique(pVals(pIdx));
             fprintf('MESSAGE: Pulse duration found, but not in all Notes. Its unique value is %d \n', pval);
         else
-            fprintf('MESSAGE: Pulse duration not found in any of the Notes. Using default value = %d \n', pulseDefault);
-            pval = pulseDefault;
+            if ~isnan(pulseDefault)
+                fprintf('MESSAGE: Pulse duration not found in any of the Notes. Using default value = %d \n', pulseDefault);
+                pval = pulseDefault;
+            end
         end
         
         if isempty(pval)
