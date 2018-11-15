@@ -33,6 +33,8 @@ function [iSel, iEcg, chTags, chInd] = ImaGIN_select_channels(chNames, isSEEG)
 if (nargin < 2) || isempty(isSEEG)
     isSEEG = 1;
 end
+% Make sure the names are in one row
+chNames = chNames(:)';
 
 % Get all names: remove special characters
 AllNames = cellfun(@(c)c(~ismember(c, ' .,?!-_@#$%^&*+*=()[]{}|/')), chNames, 'UniformOutput', 0);
