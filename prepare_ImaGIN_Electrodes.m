@@ -18,12 +18,14 @@ end
 
 %for files generated with Intranat
 if strcmp(source, 'intranat')
+    % data will contain the content of the implantationFile (presumably .CSV)
     data=extractIntranatFile(implantationFile);
     
     %identification of the line with the MNI positions
     for i1=1:size(data,2)
         for i2=1:size(data{i1},1)
             if strcmp(data{i1}{i2},'MNI')
+                % getting indeces of the 'MNI' column
                 indi=i1;
                 indj=i2;
             end
@@ -45,6 +47,7 @@ if strcmp(source, 'intranat')
                         select_ind=cat(1,select_ind,ind2(i0));
                     end
                 end
+                % separate contact label and contact index
                 num = num2str(str2num(nametmp{i}(select_ind)));
                 num2 = nametmp{i}(select_ind);
                 name = [lower(nametmp{i}(ind1(1):ind1(length(ind1)))) num];
@@ -57,39 +60,36 @@ if strcmp(source, 'intranat')
         
     else
         if strcmp(polarity, 'bipolar')  % fixed even for the case where the electrode name includes numbers
-        bip=[];                         
-        for i=4:length(nametmp)
-            if ~isempty(strfind(nametmp{i},'-')) 
-                %ind1 = regexp(lower(nametmp{i}),'[a-z\'']');
-                sep = regexp(nametmp{i},'-');
-                
-                iLastLetter1 = find(~ismember(nametmp{i}(1:sep-1),   '0123456789'), 1, 'last'); %VT
-                iLastLetter2 = find(~ismember(nametmp{i}(sep+1:end), '0123456789'), 1, 'last');
-                if isempty(iLastLetter1)
-                    iLastLetter1 = 0;
-                end
-                if isempty(iLastLetter2)
-                    iLastLetter2 = 0;
-                end
-                if iLastLetter1 > 0 && iLastLetter2 > 0
-                    name     = [lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(iLastLetter1+1:sep-1) lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(sep+iLastLetter2+1:end)];
-                    name2    = [lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(iLastLetter1+1:sep-1) lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(sep+iLastLetter2+1:end)];
-                    Name{1}  = cat(1,Name{1},{name});
-                    Name{2}  = cat(1,Name{2},{name2});
-                    Position = cat(1,Position,str2num(positiontmp{i}));
-                end
-                %{
-                % VT
-                %ind2 = regexp(nametmp{i},'\d');
-                if ~isempty(ind1) && ~isempty(ind2)
-                    name = [lower(nametmp{i}(ind1 < sep)) num2str(str2num(nametmp{i}(ind2(ind2 < sep)))) lower(nametmp{i}(ind1 < sep)) num2str(str2num(nametmp{i}(ind2(ind2 > sep))))];
-                    name2 = [lower(nametmp{i}(ind1 < sep)) nametmp{i}(ind2(ind2 < sep)) lower(nametmp{i}(ind1 < sep)) nametmp{i}(ind2(ind2 > sep))];
-                    Name{1} = cat(1,Name{1},{name});
-                    Name{2} = cat(1,Name{2},{name2});
-                    Position = cat(1,Position,str2num(positiontmp{i}));
-                end
-                %}
-            end
+        % TODO: Throw an exception here, don't execute anything!!!
+            error('Bipolar option not implemented')
+          %       
+          %       iLastLetter1 = find(~ismember(nametmp{i}(1:sep-1),   '0123456789'), 1, 'last'); %VT
+          %       iLastLetter2 = find(~ismember(nametmp{i}(sep+1:end), '0123456789'), 1, 'last');
+          %       if isempty(iLastLetter1)
+          %           iLastLetter1 = 0;
+          %       end
+          %       if isempty(iLastLetter2)
+          %           iLastLetter2 = 0;
+          %       end
+          %       if iLastLetter1 > 0 && iLastLetter2 > 0
+          %           name     = [lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(iLastLetter1+1:sep-1) lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(sep+iLastLetter2+1:end)];
+          %           name2    = [lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(iLastLetter1+1:sep-1) lower(nametmp{i}(1:iLastLetter1)) nametmp{i}(sep+iLastLetter2+1:end)];
+          %           Name{1}  = cat(1,Name{1},{name});
+          %           Name{2}  = cat(1,Name{2},{name2});
+          %           Position = cat(1,Position,str2num(positiontmp{i}));
+          %       end
+          %       %{
+          %       % VT
+          %       %ind2 = regexp(nametmp{i},'\d');
+          %       if ~isempty(ind1) && ~isempty(ind2)
+          %           name = [lower(nametmp{i}(ind1 < sep)) num2str(str2num(nametmp{i}(ind2(ind2 < sep)))) lower(nametmp{i}(ind1 < sep)) num2str(str2num(nametmp{i}(ind2(ind2 > sep))))];
+          %           name2 = [lower(nametmp{i}(ind1 < sep)) nametmp{i}(ind2(ind2 < sep)) lower(nametmp{i}(ind1 < sep)) nametmp{i}(ind2(ind2 > sep))];
+          %           Name{1} = cat(1,Name{1},{name});
+          %           Name{2} = cat(1,Name{2},{name2});
+          %           Position = cat(1,Position,str2num(positiontmp{i}));
+          %       end
+          %       %}
+          %   end
         end
         end
     end
@@ -111,7 +111,7 @@ close all
 
 end
 
-
+% It gets the CSV file, and reads its content to Matlab structure 'data'
 function data = extractIntranatFile(filename)
 delimiter = '\t';
 formatSpec = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%[^\n\r]';
