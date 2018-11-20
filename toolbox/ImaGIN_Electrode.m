@@ -186,13 +186,19 @@ for i0 = 1:size(t,1)
     elecUnused = setdiff(unique(chTagsCSV), unique(chTagsSEEG));
     
     % Add entries in a NEW log file
-    if ~isempty(chMatchLog)
+    if ~isempty(chMatchLog) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
+        ImaGIN_save_log(S.FileOut, 'Positions added for channels:', chMatchLog(:,1));
+    else
         ImaGIN_save_log(T, 'Positions added for channels:', chMatchLog(:,1));
     end
-    if ~isempty(chNotFound)
+    if ~isempty(chNotFound) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
+        ImaGIN_save_log(S.FileOut, 'Unmatched SEEG channels:', chNotFound);
+    else
         ImaGIN_save_log(T, 'Unmatched SEEG channels:', chNotFound);
     end
-    if ~isempty(elecUnused)
+    if ~isempty(elecUnused) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
+        ImaGIN_save_log(S.FileOut, 'Unmatched CSV electrodes:', elecUnused);
+    else
         ImaGIN_save_log(T, 'Unmatched CSV electrodes:', elecUnused);
     end
     
