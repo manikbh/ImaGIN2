@@ -135,11 +135,11 @@ for i0 = 1:size(t,1)
                 iChanPos = findChannel(Sensors.label{i1}, Name{1});
                 if ~isempty(iChanPos)
                     selName = Name{1};
-                else
-                    iChanPos = findChannel(Sensors.label{i1}, Name{2});
-                    if ~isempty(iChanPos)
-                        selName = Name{2};
-                    end
+%                 else
+%                     iChanPos = findChannel(Sensors.label{i1}, Name{2});
+%                     if ~isempty(iChanPos)
+%                         selName = Name{2};
+%                     end
                 end
             % If there is only one list of names
             else
