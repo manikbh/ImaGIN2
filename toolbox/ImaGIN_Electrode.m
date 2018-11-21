@@ -112,76 +112,58 @@ chNotFound = {};
 chMatchLog = {};
 for i0 = 1:size(t,1)
     T = deblank(t(i0,:));
-    D = spm_eeg_load(T);
-
-    Sensors = sensors(D,'EEG');
-    Sensors.label = deblank(Sensors.label);
-    
-    if length(unique(Sensors.label))~=length(Sensors.label)
-        warning('repeated label in the TRC file')
-    end
-
-    % Default list of channel names
-    if iscell(Name{1})
-        selName = Name{1};
+    % Clone file if requested in input
+    if (nargin >= 1) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
+        D = spm_eeg_load(T);
+        D2 = clone(D, S.FileOut, [D.nchannels D.nsamples D.ntrials]); 
+        D2(:,:,:) = D(:,:,:);
+        save(D2);
+        SpmFile = S.FileOut;
     else
-        selName = Name;
+        SpmFile = T;
     end
+    
+    % Load channel names
+    SpmMat = load(SpmFile);
+    Sensors = SpmMat.D.sensors.eeg;
+    if length(unique(Sensors.label))~=length(Sensors.label)
+        warning('Repeated label in the file.')
+    end
+
     % Loop on all channels available in the file
-    for i1 = 1:length(Sensors.chantype)
-        if strcmpi(chantype(D,i1),'eeg')
-            % If there are two lists of names
-            if iscell(Name{1})
-                iChanPos = findChannel(Sensors.label{i1}, Name{1});
-                if ~isempty(iChanPos)
-                    selName = Name{1};
-%                 else
-%                     iChanPos = findChannel(Sensors.label{i1}, Name{2});
-%                     if ~isempty(iChanPos)
-%                         selName = Name{2};
-%                     end
-                end
-            % If there is only one list of names
-            else
-                iChanPos = findChannel(Sensors.label{i1}, Name);
-                if ~isempty(iChanPos)
-                    selName = Name;
+    for i1 = 1:length(Sensors.label)
+        iChanPos = findChannel(Sensors.label{i1}, Name);
+        % If the channel was already found in the list before: check the best option based on the case
+        if ~isempty(iChanPos) && ~isempty(chMatchLog)
+            iPrevious = find(strcmp(Name{iChanPos}, chMatchLog(:,2)));
+            if ~isempty(iPrevious)
+                % If the new channel has strictly the same case, or if it corresponds to a replaced "prime": remove the previous match
+                if isequal(Sensors.label{i1}, Name{iChanPos}) || ...
+                   (any(Sensors.label{i1} == '''') && strcmp(strrep(upper(Sensors.label{i1}), '''', 'p'), Name{iChanPos}))
+                    disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} 'discarded.']);
+                    chMatchLog(iPrevious,:) = [];
+                else
+                    disp(['ImaGIN> WARNING: Channel name conflict: ' chMatchLog{iPrevious,1} ' matched with ' Name{iChanPos} ', ' Sensors.label{i1} ' discarded.']);
+                    iChanPos = [];
                 end
             end
-            % If the channel was already found in the list before: check the best option based on the case
-            if ~isempty(iChanPos) && ~isempty(chMatchLog)
-                iPrevious = find(strcmp(selName{iChanPos}, chMatchLog(:,2)));
-                if ~isempty(iPrevious)
-                    % If the new channel has strictly the same case, or if it corresponds to a replaced "prime": remove the previous match
-                    if isequal(Sensors.label{i1}, selName{iChanPos}) || ...
-                       (any(Sensors.label{i1} == '''') && strcmp(strrep(upper(Sensors.label{i1}), '''', 'p'), selName{iChanPos}))
-                        disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' selName{iChanPos} ', ' chMatchLog{iPrevious,1} 'discarded.']);
-                        chMatchLog(iPrevious,:) = [];
-                    else
-                        disp(['ImaGIN> WARNING: Channel name conflict: ' chMatchLog{iPrevious,1} ' matched with ' selName{iChanPos} ', ' Sensors.label{i1} ' discarded.']);
-                        iChanPos = [];
-                    end
-                end
-            end
-            % If channel was found
-            if ~isempty(iChanPos)
-                % Copy position
-                Sensors.elecpos(i1,:) = Position(iChanPos,:);
-                Sensors.chanpos(i1,:) = Position(iChanPos,:);
-                % Copy channel name from input name file (ADDED BY FT 5-Oct-2018)
-                chMatchLog{end+1,1} = Sensors.label{i1};
-                chMatchLog{end,2} = selName{iChanPos};
-                Sensors.label{i1} = selName{iChanPos};
-            else
-                disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
-                chNotFound{end+1} = Sensors.label{i1};
-            end
-        elseif strcmpi(chantype(D,i1),'ecg')
-            Sensors.chantype{i1}='ecg';
+        end
+        % If channel was found
+        if ~isempty(iChanPos)
+            % Copy position
+            Sensors.elecpos(i1,:) = Position(iChanPos,:);
+            Sensors.chanpos(i1,:) = Position(iChanPos,:);
+            % Copy channel name from input name file (ADDED BY FT 5-Oct-2018)
+            chMatchLog{end+1,1} = Sensors.label{i1};
+            chMatchLog{end,2} = Name{iChanPos};
+            Sensors.label{i1} = Name{iChanPos};
+        else
+            disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
+            chNotFound{end+1} = Sensors.label{i1};
         end
     end
     % Electrodes present in the CSV but not found in the SEEG recordings
-    [tmp, tmp, chTagsCSV] = ImaGIN_select_channels(selName);
+    [tmp, tmp, chTagsCSV] = ImaGIN_select_channels(Name);
     [tmp, tmp, chTagsSEEG] = ImaGIN_select_channels(chMatchLog(:,2)');
     elecUnused = setdiff(unique(chTagsCSV), unique(chTagsSEEG));
     
@@ -203,29 +185,43 @@ for i0 = 1:size(t,1)
     end
     
     % Match file: Correspondance between SEEG-CSV-LENA conventions
-    try
-        fid = fopen(S.FileTxtOut,'w');
-        fprintf(fid,'SEEG,CSV\n');
-        for i = 1:size(chMatchLog,1)
-            fprintf(fid,'%s,%s\n', chMatchLog{i,1}, chMatchLog{i,2});
+    if isfield(S, 'FileTxtOut') && ~isempty(S.FileTxtOut)
+        try
+            fid = fopen(S.FileTxtOut,'w');
+            fprintf(fid,'SEEG,CSV\n');
+            for i = 1:size(chMatchLog,1)
+                fprintf(fid,'%s,%s\n', chMatchLog{i,1}, chMatchLog{i,2});
+            end
+            fclose(fid);
+        catch
+            disp('Log with matched channels names SEEG-CSV not saved.')
         end
-        fclose(fid);
-    catch
-        disp('recording sensors not saved.')
     end
     
     % Replace channel definition in input .mat/.dat file
-    D = sensors(D, 'EEG', Sensors);
+    SpmMat.D.sensors.eeg = Sensors;
     
-    % Create a new .mat/dat file (F-TRACT convention)
-    if (nargin >= 1) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
-        D2 = clone(D,S.FileOut,[D.nchannels D.nsamples D.ntrials]); 
-        D2(:,:,:) = D(:,:,:);
-        save(D2);
-    % Update existing .mat file
-    else
-        save(D);
+    % Replace labels in D.channels
+    for iChan = 1:length(SpmMat.D.channels)
+        iChanMatch = find(strcmpi(SpmMat.D.channels(iChan).label, chMatchLog(:,1)));
+        if (length(iChanMatch) == 1)
+            SpmMat.D.channels(iChan).label = chMatchLog{iChanMatch,2};
+        end
     end
+    
+    % Replace labels in events
+    for iEvt = 1:length(SpmMat.D.trials.events)
+%         % Get channel name from event name
+%         chName = SpmMat.D.trials.events(iEvt).type(.....)
+%         % Replace with matching CSV name
+%         iChanMatch = find(strcmpi(chName, chMatchLog(:,1)));
+%         if (length(iChanMatch) == 1)
+%             SpmMat.D.trials.events(iEvt).type(......) = chMatchLog{iChanMatch,2};
+%         end
+    end
+    
+    % Update existing .mat file
+    save(SpmFile, '-struct', 'SpmMat');
 end
 
 end
