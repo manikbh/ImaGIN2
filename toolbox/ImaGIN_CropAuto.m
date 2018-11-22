@@ -157,15 +157,16 @@ for c=1:length(KeepEvent) % Navigate all stim events
         end  
     end   
     %% Avoid number starting with 0: 01 02 03,...
-    
+    isZero = 0;
     if numel(numZ) >= 2
-        noteName =  char(strrep(noteName,numZ(1), num2str(str2double(numZ(1)))));
-        noteName =  char(strrep(noteName,numZ(2), num2str(str2double(numZ(2)))));        
+        for nZ = 1:numel(numZ)
+            bgnZero = find(numZ{nz},'0','first');
+            if ~isempty(bgnZero)
+                isZero = 1;
+                noteName =  char(strrep(noteName,numZ(nz), num2str(str2double(numZ(nz)))));
+            end
+        end
     end
-
-%     noteName = strrep(noteName,'.0','');
-%     noteName = strrep(noteName,'.','');  %OD for EXCITATOR
-
     noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'.','');
     idScore = strfind(noteName,'_');
     if ~isempty(idScore)
@@ -306,10 +307,6 @@ for c=1:length(KeepEvent) % Navigate all stim events
 
         xpr1  = '\w*Hz_\w*'; xpr2 = '\w*us_\w*';
         xpri1 = regexpi(noteName,xpr1); xpri2 = regexpi(noteName,xpr2);
-        if isempty(xpri1) && isempty(xpri2)
-            endpart  = '_1Hz_Xus';
-            noteName = strcat(noteName,endpart);
-        end
     end
     noteName = strrep(noteName,'-','');  noteName = strrep(noteName,'_mA','mA');
     
@@ -396,7 +393,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
     %%
     [~,tmpdi]=regexp(noteName,'\d*','Match');
     noteNameNew=noteName;
-    noteNameNew(1:tmpdi(1)-1)=upper(noteNameNew(1:tmpdi(1)-1));
+    % noteNameNew(1:tmpdi(1)-1)=upper(noteNameNew(1:tmpdi(1)-1)); 
     noteNameNew = strrep(noteNameNew,'''','p');     %to avoid ' in the name
         
     % Change of naming convention: Ap12_3mA_1Hz_1000us_1 becomes Ap1-Ap2_3mA_1Hz_1000us_1
@@ -412,9 +409,17 @@ for c=1:length(KeepEvent) % Navigate all stim events
     chLabel = Label(1:iLastLetter);
     chInd = Label(iLastLetter+1:end);
     if numel(chInd)==2
-        noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, ['0' chInd(2)], noteNameNew(idxScore(1):end));  
+        if isZero == 1
+            noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, ['0' chInd(2)], noteNameNew(idxScore(1):end));
+        else
+            noteNameNew = strcat(chLabel, chInd(1), '-',chLabel, ['0' chInd(2)], noteNameNew(idxScore(1):end));
+        end
     elseif numel(chInd)==3 
-        noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, chInd(2:3), noteNameNew(idxScore(1):end)); 
+        if isZero == 1
+        noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, chInd(2:3), noteNameNew(idxScore(1):end));
+        else
+         noteNameNew = strcat(chLabel, chInd(1), '-',chLabel, chInd(2:3), noteNameNew(idxScore(1):end)); 
+        end 
     elseif numel(chInd)==4
         noteNameNew = strcat(chLabel,chInd(1:2), '-',chLabel, chInd(3:4), noteNameNew(idxScore(1):end));
     elseif numel(chInd)==6
@@ -539,15 +544,18 @@ end
 %%
 clc;
 
-f = dir(fullfile(DirOut,'*.mat')); %Delete all cropped text file
+f = dir(fullfile(DirOut,'*.mat')); %Delete all cropped text file and .mat file with no existing stim channels
 f = {f.name};
 for k=1:numel(f)
+    D = spm_eeg_load(f{k});
     [~, matFileName, ~] = fileparts(f{k});
     nbrSc = strfind(matFileName,'_');
     txtFileName = matFileName(1:nbrSc(end)-1);
     if exist(fullfile(DirOut,strcat(txtFileName,'.txt')),'file')== 2
         delete(fullfile(DirOut,strcat(txtFileName,'.txt')));
     end
+    matFileName 
+    
 end
 nf = dir(fullfile(DirOut,'*0us.txt'));
 nf = {nf.name};

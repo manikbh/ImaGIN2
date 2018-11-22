@@ -209,17 +209,26 @@ for i0 = 1:size(t,1)
         end
     end
     
-%     % Replace labels in events
-%     for iEvt = 1:length(SpmMat.D.trials.events)
-% %         % Get channel name from event name
-% %         chName = SpmMat.D.trials.events(iEvt).type(.....)
-% %         % Replace with matching CSV name
-% %         iChanMatch = find(strcmpi(chName, chMatchLog(:,1)));
-% %         if (length(iChanMatch) == 1)
-% %             SpmMat.D.trials.events(iEvt).type(......) = chMatchLog{iChanMatch,2};
-% %         end
-%     end
-    
+    % Replace labels in events
+    for iEvt = 1:length(SpmMat.D.trials.events)
+        % Get channel name from event name
+        EvtName = SpmMat.D.trials.events(iEvt).type;
+        [chLabel1, chLabel2, noteNameNew] = ImaGIN_CleanEventName(EvtName);     
+        % Replace with matching CSV name
+        iChanMatch1 = find(strcmpi(chLabel1, chMatchLog(:,1)));
+        iChanMatch2 = find(strcmpi(chLabel2, chMatchLog(:,1)));
+ 
+
+        if (length(iChanMatch1) == 1)
+            noteNameNew = strrep(noteNameNew, chLabel1,chMatchLog{iChanMatch1,2});
+        end
+        if (length(iChanMatch2) == 1)
+            noteNameNew = strrep(noteNameNew, chLabel2,chMatchLog{iChanMatch2,2});            
+        end
+        if (length(iChanMatch1) == 1) &&  (length(iChanMatch2) == 1)
+        SpmMat.D.trials.events(iEvt).type = noteNameNew;
+        end
+    end    
     % Update existing .mat file
     save(SpmFile, '-struct', 'SpmMat');
 end
