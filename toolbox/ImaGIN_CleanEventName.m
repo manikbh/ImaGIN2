@@ -1,4 +1,4 @@
-function [chLabel1, chLabel2, noteNameNew]  = ImaGIN_CleanEventName(Anota)
+function [chLabel1, chLabel2, noteNameNew, chInd1, chInd2]  = ImaGIN_CleanEventName(Anota)
 Anota = char(Anota);
 xpr1  = '\w*hz_\w*';
 xpr2  = '\w*stim\w*';
@@ -76,9 +76,9 @@ if KeepEvent == 1 % Navigate all stim events
     isZero = 0;
     
     if numel(numZ) >= 2
-        for nZ = 1:numel(numZ)
-            bgnZero = find(numZ{nz},'0','first');
-            if ~isempty(bgnZero)
+        for nz = 1:numel(numZ)
+            bgnZero = strncmp(numZ{nz},'0',1);
+            if bgnZero == 1 && str2double(numZ(nz))~= 0
                 isZero = 1;
                 noteName =  char(strrep(noteName,numZ(nz), num2str(str2double(numZ(nz)))));
             end
@@ -322,31 +322,44 @@ if KeepEvent == 1 % Navigate all stim events
     chInd = Label(iLastLetter+1:end);
     if numel(chInd)==2
         if isZero == 1
-            chLabel1 = strcat(chLabel, ['0', chInd(1)]);
-            chLabel2 = strcat(chLabel, ['0', chInd(2)]);
+            chInd1 = ['0', chInd(1)];
+            chInd2 = ['0', chInd(2)];
+            chLabel1 = strcat(chLabel, chInd1);
+            chLabel2 = strcat(chLabel, chInd2);
         else
-            chLabel1 = strcat(chLabel, ['0', chInd(1)]);
-            chLabel2 = strcat(chLabel, ['0', chInd(2)]);            
+            chInd1 = chInd(1);
+            chInd2 = chInd(2);
+            chLabel1 = strcat(chLabel, chInd1);
+            chLabel2 = strcat(chLabel, chInd2);            
         end
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
     elseif numel(chInd)==3
         if isZero == 1
-            chLabel1 = strcat(chLabel, ['0', chInd(1)]);
+            chInd1 = ['0', chInd(1)];
+            chLabel1 = strcat(chLabel, chInd1);
         else
-            chLabel1 = strcat(chLabel, chInd(1));   
+            chInd1 = chInd(1);
+            chLabel1 = strcat(chLabel, chInd1);   
         end
-        chLabel2 = strcat(chLabel,  chInd(2:3));
+        chInd2 = chInd(2:3);
+        chLabel2 = strcat(chLabel,  chInd2);
         noteNameNew = strcat(chLabel1,'-',chLabel2, noteNameNew(idxScore(1):end));
     elseif numel(chInd)==4
-        chLabel1 = strcat(chLabel,chInd(1:2));
-        chLabel2 = strcat(chLabel, chInd(3:4));
+        chInd1 = chInd(1:2);
+        chInd2 = chInd(3:4);
+        chLabel1 = strcat(chLabel,chInd1);
+        chLabel2 = strcat(chLabel, chInd2);
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
     elseif numel(chInd)==6
-        chLabel1 = strcat(chLabel, chInd(1:3));
-        chLabel2 = strcat(chLabel, chInd(4:6));
+        chInd1 = chInd(1:3);
+        chInd2 = chInd(4:6);
+        chLabel1 = strcat(chLabel, chInd1);
+        chLabel2 = strcat(chLabel, chInd2);
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
     end
 else
+   chInd1 = '';
+   chInd2 = '';
    chLabel1 = Anota;
    chLabel2 = Anota;
    noteNameNew = Anota;

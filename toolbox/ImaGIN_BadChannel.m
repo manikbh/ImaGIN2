@@ -94,18 +94,24 @@ bIdx = T.noIdx(strcmp(channelClass, 'Bad'));
 % In case disconnected electrode doesn't have stimulation artefact
 % specific for some FTRACT datasets
 chanLbs = D.chanlabels;
-try
-    chanLbs = upper(char(chanLbs));
-catch
-    chanLbs = upper(char(vertcat(chanLbs{1,:})));
-end
-chanLbs = strrep(cellstr(chanLbs),'''','p');
+
+elec = sensors(D,'eeg');  % add channels without positions into bad channels
+pos  = elec.elecpos; 
+Sens = elec.label;
+idxNaN = find(isnan(pos(:,1)));
+
+% try
+%     chanLbs = char(chanLbs);
+% catch
+%     chanLbs = char(vertcat(chanLbs{1,:}));
+% end
+% chanLbs = strrep(cellstr(chanLbs),'''','p');
 crFname = D.fname;
 crFname = strrep(crFname,'welectrodes_','');
 undsc   = strfind(crFname,'_'); % Ap12_3mA_1Hz_1050us becomes Ap01-Ap02_3mA_1Hz_1050us with new convention
 idxDush = strfind(crFname,'-');
 Pulse   = strfind(crFname,'us');
-Amp     = strfind(crFname,'Am');
+Amp     = strfind(crFname,'mA');
 Frq     = strfind(crFname,'Hz');
 if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
     if ~isempty(idxDush)
@@ -159,11 +165,20 @@ if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
         end
     end
 end
+NaNbIdx = bIdx;
+if ~isempty(idxNaN)
+    bIdx = [bIdx;idxNaN];
+    bIdx = sort(unique(bIdx));
+end
+
 %%
 % Save bad channel indices in .txt file
 badFile = fopen(fullfile(badDir, [FileOut, '_bIdx.txt']), 'w');
-fprintf(badFile, '%d\n', bIdx(:));
+for i = 1:length(bIdx)
+    fprintf(badFile, '%d,%s\n', bIdx(i), chanLbs{bIdx(i)});
+end
 fclose(badFile);
+
 Lia = ismember(T.noIdx,bIdx);
 channelClass(Lia) = {'Bad'};
 Tnew = [T channelClass];
@@ -171,7 +186,15 @@ Tnew.Properties.VariableNames{'Var9'} = 'Note';
 csvfilename = fullfile(badDir, [FileOut, '.csv']); % Save feature table & badchannels indices
 writetable(Tnew,csvfilename,'Delimiter',',');
 
-%end
+try
+    monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', FileOut, 'txt']), 'w'); % export monopolar recording channels
+    for i = 1:length(Sens)
+        fprintf(monoRecordings, '%s\n', Sens{i});
+    end
+    fclose(monoRecordings);
+catch
+    disp('monolar recordings file not created.')
+end
 
 % Add badchannel index in meeg object
 if ~isempty(bIdx)
@@ -204,8 +227,10 @@ if n_c >= Size
         figure(i2);
         set(gcf,'Position',[629 -17 702 1101])
         for i3 = 1:Size
-            if intersect(i3+(i2-1)*Size,bIdx) == i3+(i2-1)*Size
+            if intersect(i3+(i2-1)*Size,NaNbIdx) == i3+(i2-1)*Size      
                 color = 'r'; %Bad channels will be printed in red
+            elseif intersect(i3+(i2-1)*Size,idxNaN) == i3+(i2-1)*Size
+                color = 'b'; %NaN channels will be printed in blue
             else
                 color = 'k'; %Good channels will be printed in black
             end

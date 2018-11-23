@@ -41,9 +41,11 @@ D = spm_eeg_load(sFile); % Load the converted file .mat
 %% Find existing crop files in DirOut
 matExist = dir(fullfile(DirOut,'*.mat')); %Delete all cropped text file
 matExist = {matExist.name};
-
+matDelCount = 0;
+matDeleted = {};
 %%
 evt = events(D);
+chanLabels = chanlabels(D);
 evsize = size(evt,2);        % Number of events
 Notes  = cell(1,evsize);     % Events labels
 Time   = zeros(1,evsize);
@@ -159,9 +161,9 @@ for c=1:length(KeepEvent) % Navigate all stim events
     %% Avoid number starting with 0: 01 02 03,...
     isZero = 0;
     if numel(numZ) >= 2
-        for nZ = 1:numel(numZ)
-            bgnZero = find(numZ{nz},'0','first');
-            if ~isempty(bgnZero)
+        for nz = 1:numel(numZ)
+            bgnZero = strncmp(numZ{nz},'0',1);
+            if bgnZero == 1 && str2double(numZ(nz))~= 0
                 isZero = 1;
                 noteName =  char(strrep(noteName,numZ(nz), num2str(str2double(numZ(nz)))));
             end
@@ -401,6 +403,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
     if isempty(idxScore)
         return;
     end
+    
     Label    = noteNameNew(1:idxScore(1)-1);
     iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
     if isempty(iLastLetter) || (iLastLetter == length(Label))
@@ -410,23 +413,60 @@ for c=1:length(KeepEvent) % Navigate all stim events
     chInd = Label(iLastLetter+1:end);
     if numel(chInd)==2
         if isZero == 1
-            noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, ['0' chInd(2)], noteNameNew(idxScore(1):end));
+            chInd1 = ['0', chInd(1)];
+            chInd2 = ['0', chInd(2)];
+            chLabel1 = strcat(chLabel, chInd1);
+            chLabel2 = strcat(chLabel, chInd2);
         else
-            noteNameNew = strcat(chLabel, chInd(1), '-',chLabel, ['0' chInd(2)], noteNameNew(idxScore(1):end));
+            chInd1 = chInd(1);
+            chInd2 = chInd(2);
+            chLabel1 = strcat(chLabel, chInd1);
+            chLabel2 = strcat(chLabel, chInd2);
         end
-    elseif numel(chInd)==3 
+        noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
+    elseif numel(chInd)==3
         if isZero == 1
-        noteNameNew = strcat(chLabel,['0' chInd(1)], '-',chLabel, chInd(2:3), noteNameNew(idxScore(1):end));
+            chInd1 = ['0', chInd(1)];
+            chLabel1 = strcat(chLabel, chInd1);
         else
-         noteNameNew = strcat(chLabel, chInd(1), '-',chLabel, chInd(2:3), noteNameNew(idxScore(1):end)); 
-        end 
+            chInd1 = chInd(1);
+            chLabel1 = strcat(chLabel, chInd1);
+        end
+        chInd2 = chInd(2:3);
+        chLabel2 = strcat(chLabel,  chInd2);
+        noteNameNew = strcat(chLabel1,'-',chLabel2, noteNameNew(idxScore(1):end));
     elseif numel(chInd)==4
-        noteNameNew = strcat(chLabel,chInd(1:2), '-',chLabel, chInd(3:4), noteNameNew(idxScore(1):end));
+        chInd1 = chInd(1:2);
+        chInd2 = chInd(3:4);
+        chLabel1 = strcat(chLabel,chInd1);
+        chLabel2 = strcat(chLabel, chInd2);
+        noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
     elseif numel(chInd)==6
-        noteNameNew = strcat(chLabel,chInd(1:3), '-',chLabel, chInd(4:6), noteNameNew(idxScore(1):end));
+        chInd1 = chInd(1:3);
+        chInd2 = chInd(4:6);
+        chLabel1 = strcat(chLabel, chInd1);
+        chLabel2 = strcat(chLabel, chInd2);
+        noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
+    elseif isempty(chInd)
+        chInd1 = '';
+        chInd2 = '';
+        chLabel1 = '';
+        chLabel2 = '';
     end
     
     S.FileOut=  fullfile(DirOut, strcat(noteNameNew,'.txt'));
+    
+    iChanMatch1 = find(strcmpi(chLabel1, chanLabels));
+    iChanMatch2 = find(strcmpi(chLabel2, chanLabels));
+    
+    if isempty(iChanMatch1) && ~isempty(chInd1)
+        tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
+        iChanMatch1 = find(strcmpi(tmpchLabel1, chanLabels));
+    end
+    if isempty(iChanMatch2) && ~isempty(chInd2)
+        tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
+        iChanMatch2 = find(strcmpi(tmpchLabel2, chanLabels));
+    end
     
     %{  
     %% uncomment this section for some datasets
@@ -439,7 +479,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
     % S.Channels = [selCh1,selCh2]; 
     % S.FindBadChannels=0;
     %}
-    [stimTime,~,StimulationFreqU] = ImaGIN_StimDetect(S);
+    [stimTime,~,~] = ImaGIN_StimDetect(S);
     disp(KeepEvent(c)), disp(S.EvtName);
     stimFq = StimFreq;
     
@@ -539,30 +579,31 @@ for c=1:length(KeepEvent) % Navigate all stim events
         S2.EventRef= 'Stim';
         S2.Offset  = 0;
         D = ImaGIN_TimeZero(S2);
-    end
+        cropFileNameMat = fullfile(DirOut, strcat(namePrefix,'.mat'));
+        if exist(cropFileNameMat, 'file') ~= 2 && isempty(iChanMatch1) &&  isempty(iChanMatch1)
+            matDelCount =  matDelCount + 1;
+            matDeleted(end+1) = {namePrefix};
+        end
+    end    
 end
 %%
 clc;
-
 f = dir(fullfile(DirOut,'*.mat')); %Delete all cropped text file and .mat file with no existing stim channels
 f = {f.name};
 for k=1:numel(f)
-    D = spm_eeg_load(f{k});
     [~, matFileName, ~] = fileparts(f{k});
     nbrSc = strfind(matFileName,'_');
     txtFileName = matFileName(1:nbrSc(end)-1);
     if exist(fullfile(DirOut,strcat(txtFileName,'.txt')),'file')== 2
         delete(fullfile(DirOut,strcat(txtFileName,'.txt')));
-    end
-    matFileName 
-    
+    end  
 end
 nf = dir(fullfile(DirOut,'*0us.txt'));
 nf = {nf.name};
 
 realStims = length(KeepEvent);
 realCrps  = numel(f)-numel(matExist);
-stimTxt   = numel(nf) + realCrps;
+stimTxt   = numel(nf) + realCrps + matDelCount;
 misCrop = 0;
 nanStim = 0;
 
@@ -604,7 +645,24 @@ txtf = {txtf.name};
 for k3 = 1:numel(txtf)
     delete(fullfile(DirOut, txtf{k3}))
 end
-
+if matDelCount > 0
+    logTxtFile = fullfile(DirOut, 'CropsNoRecordings_log.txt');
+    fprintf('\n\n stim channels not recorded, Crop is deleted: \nn');
+    try
+        fid = fopen(logTxtFile,'w');
+        for i = 1:matDelCount
+            fprintf('%s \n', matDeleted{i});
+            fprintf(fid,'%s\n',matDeleted{i});
+            if exist(fullfile(DirOut, strcat(matDeleted{i},'.mat')), 'file') ~= 2
+                delete(fullfile(DirOut, strcat(matDeleted{i},'.mat')))
+                delete(fullfile(DirOut, strcat(matDeleted{i},'.dat')))
+            end
+        end
+        fclose(fid);
+    catch
+        disp('Log not created.')
+    end
+end
 set_final_status('OK');
 disp('Done');
 

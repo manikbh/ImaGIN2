@@ -163,25 +163,19 @@ for i0 = 1:size(t,1)
         end
     end
     % Electrodes present in the CSV but not found in the SEEG recordings
-    [tmp, tmp, chTagsCSV] = ImaGIN_select_channels(Name);
-    [tmp, tmp, chTagsSEEG] = ImaGIN_select_channels(chMatchLog(:,2)');
+    [~, ~, chTagsCSV] = ImaGIN_select_channels(Name);
+    [~, ~, chTagsSEEG] = ImaGIN_select_channels(chMatchLog(:,2)');
     elecUnused = setdiff(unique(chTagsCSV), unique(chTagsSEEG));
     
     % Add entries in a NEW log file
-    if ~isempty(chMatchLog) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
-        ImaGIN_save_log(S.FileOut, 'Positions added for channels:', chMatchLog(:,1));
-    else
-        ImaGIN_save_log(T, 'Positions added for channels:', chMatchLog(:,1));
+    if ~isempty(chMatchLog) 
+        ImaGIN_save_log(SpmFile, 'Positions added for channels:', chMatchLog(:,1));
     end
-    if ~isempty(chNotFound) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
-        ImaGIN_save_log(S.FileOut, 'Unmatched SEEG channels:', chNotFound);
-    else
-        ImaGIN_save_log(T, 'Unmatched SEEG channels:', chNotFound);
+    if ~isempty(chNotFound) 
+        ImaGIN_save_log(SpmFile, 'Unmatched SEEG channels:', chNotFound);
     end
-    if ~isempty(elecUnused) && isfield(S, 'FileOut') && ~isempty(S.FileOut)
-        ImaGIN_save_log(S.FileOut, 'Unmatched CSV electrodes:', elecUnused);
-    else
-        ImaGIN_save_log(T, 'Unmatched CSV electrodes:', elecUnused);
+    if ~isempty(elecUnused) 
+        ImaGIN_save_log(SpmFile, 'Unmatched CSV electrodes:', elecUnused);
     end
     
     % Match file: Correspondance between SEEG-CSV-LENA conventions
@@ -213,11 +207,18 @@ for i0 = 1:size(t,1)
     for iEvt = 1:length(SpmMat.D.trials.events)
         % Get channel name from event name
         EvtName = SpmMat.D.trials.events(iEvt).type;
-        [chLabel1, chLabel2, noteNameNew] = ImaGIN_CleanEventName(EvtName);     
+        [chLabel1, chLabel2, noteNameNew, chInd1, chInd2] = ImaGIN_CleanEventName(EvtName);     
         % Replace with matching CSV name
         iChanMatch1 = find(strcmpi(chLabel1, chMatchLog(:,1)));
-        iChanMatch2 = find(strcmpi(chLabel2, chMatchLog(:,1)));
- 
+        iChanMatch2 = find(strcmpi(chLabel2, chMatchLog(:,1)));        
+        if isempty(iChanMatch1) && ~isempty(chInd1)
+            tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
+            iChanMatch1 = find(strcmpi(tmpchLabel1, chMatchLog(:,1)));
+        end        
+        if isempty(iChanMatch2) && ~isempty(chInd2)
+            tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
+            iChanMatch2 = find(strcmpi(tmpchLabel2, chMatchLog(:,1)));
+        end
 
         if (length(iChanMatch1) == 1)
             noteNameNew = strrep(noteNameNew, chLabel1,chMatchLog{iChanMatch1,2});
