@@ -18,7 +18,8 @@ function ImaGIN_Electrode(S)
 % Authors: Olivier David, Francois Tadel
 
 % % Test findChannel()
-% ListCSV = {'A01', 'A02', 'A03', 'A04', 'A05', 'A18', 'Bp01', 'Bp02', 'BP01', 'BP04', 'T101', 'T111', 'V101', 'V201'};
+% ListCSV = {'A01', 'A02', 'A03', 'A04', 'A05', 'A18', 'Bp01', 'Bp02', 'BP01', 'BP04', 'Pp01', 'T101', 'T111', 'V101', 'V201'};
+% disp(['pp1: ',   ListCSV{findChannel('pp1', ListCSV)}])
 % disp(['A01: ',   ListCSV{findChannel('A01', ListCSV)}])
 % disp(['a01: ',   ListCSV{findChannel('a01', ListCSV)}])
 % disp(['a1: ',    ListCSV{findChannel('a1', ListCSV)}])
@@ -312,8 +313,8 @@ function iChanPos = findChannel(Label, List, caseType)
         case 'upper_except_p'
             iP = find(Label == 'p');
             Label = upper(Label);
-            if (length(iP) == 1) && (iP >= 2)
-                Label(iP) = 'p';
+            if any(iP >= 2)
+                Label(iP(end)) = 'p';
             end
     end
     % Replacing ' with p
