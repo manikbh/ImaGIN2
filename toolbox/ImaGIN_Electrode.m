@@ -1,4 +1,4 @@
-function D = ImaGIN_Electrode(S)
+function ImaGIN_Electrode(S)
 % Set electrode positions.
 
 % -=============================================================================
@@ -68,7 +68,6 @@ catch
     % Test for input file
     if isempty(filename) || ~exist(filename, 'file')
         disp('ImaGIN> ERROR: Invalid input file name.');
-        D = [];
         return
     end
     % Detect file type: _Name.txt/_Pos.txt or .csv
@@ -81,12 +80,10 @@ catch
             [Name, Position] = readCsv(filename);
         otherwise 
             disp('ImaGIN> ERROR: Invalid input file type.');
-            D = [];
             return
     end
     if isempty(Name)
         disp('ImaGIN> ERROR: No contact names in input files.');
-        D = [];
         return
     end
 end
