@@ -1,4 +1,4 @@
-function D = ImaGIN_Electrode(S)
+function ImaGIN_Electrode(S)
 % Set electrode positions.
 
 % -=============================================================================

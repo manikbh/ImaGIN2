@@ -68,7 +68,7 @@ S.FileOut = FileOut;
 fprintf('prepare_ImaGIN_Electrodes: S.FileTxtOut: %s \n', S.FileTxtOut)
 fprintf('prepare_ImaGIN_Electrodes: S.FileOut: %s \n', S.FileOut)
 
-D = ImaGIN_Electrode(S);
+ImaGIN_Electrode(S);
 
 set_final_status('OK')
 
