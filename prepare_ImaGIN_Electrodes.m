@@ -10,12 +10,15 @@ function prepare_ImaGIN_Electrodes(source, polarity, FileIn, implantationFile, F
 
 clear S
 S.Fname = fullfile(Root,[spm_str_manip(file,'r') '.mat']);
-
-if strcmp(source,'classic')
-    S.filenamePos = fullfile(implantationFile,'Electrodes_Pos_MNI.txt');
-    S.filenameName = fullfile(implantationFile,'Electrodes_Name.txt');
-elseif strcmp(source, 'intranat')
-    S.filenameName = implantationFile;
+if strcmp(polarity,'monopolar')
+    if strcmp(source,'classic')
+        S.filenamePos = fullfile(implantationFile,'Electrodes_Pos_MNI.txt');
+        S.filenameName = fullfile(implantationFile,'Electrodes_Name.txt');
+    elseif strcmp(source, 'intranat')
+        S.filenameName = implantationFile;
+    end
+else
+    error('No other polarity option is implemented here!')
 end
 
 % %for files generated with Intranat
