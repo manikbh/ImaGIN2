@@ -173,15 +173,19 @@ for i0 = 1:size(t,1)
         ImaGIN_save_log(SpmFile, 'Unmatched SEEG channels:', chNotFound);
         % save unmatched channels in separate .txt file
         [unPath, unFile, ~] = fileparts(SpmFile);
-        try
-        unmatchedFileName  = fullfile(unPath, ['contactsunmatched_', unFile,'.txt']);
-        fid = fopen(unmatchedFileName,'w');
-        for i = 1:length(chNotFound)
-            fprintf(fid,'%s\n', chNotFound{i});  
-        end
-        fclose(fid);
-        catch
-            disp('Unmatched channels names SEEG-CSV not saved.')
+        if numel(chNotFound) > numel(cell2mat(regexpi(chNotFound,'ecg')))
+            try
+                unmatchedFileName  = fullfile(unPath, ['contactsunmatched_', unFile,'.txt']);
+                fid = fopen(unmatchedFileName,'w');
+                for i = 1:length(chNotFound)
+                    if isempty(regexpi(chNotFound{i},'ecg'))
+                        fprintf(fid,'%s\n', chNotFound{i});
+                    end
+                end
+                fclose(fid);
+            catch
+                disp('Unmatched channels names SEEG-CSV not saved.')
+            end
         end
     end
     if ~isempty(elecUnused) 
