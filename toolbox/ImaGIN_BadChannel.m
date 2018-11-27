@@ -173,11 +173,15 @@ end
 
 %%
 % Save bad channel indices in .txt file
-badFile = fopen(fullfile(badDir, [FileOut, '_bIdx.txt']), 'w');
+
+badIdxFile = fopen(fullfile(badDir, [FileOut, '_bIdx.txt']), 'w');
+badchaFile = fopen(fullfile(badDir, [FileOut, '_bChans.txt']), 'w');
 for i = 1:length(bIdx)
-    fprintf(badFile, '%d,%s\n', bIdx(i), chanLbs{bIdx(i)});
+    fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});
+    fprintf(badIdxFile, '%d\n', bIdx(i));
 end
-fclose(badFile);
+fclose(badchaFile);
+fclose(badIdxFile);
 
 Lia = ismember(T.noIdx,bIdx);
 channelClass(Lia) = {'Bad'};
@@ -187,7 +191,7 @@ csvfilename = fullfile(badDir, [FileOut, '.csv']); % Save feature table & badcha
 writetable(Tnew,csvfilename,'Delimiter',',');
 
 try
-    monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', FileOut, 'txt']), 'w'); % export monopolar recording channels
+    monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', FileOut, '.txt']), 'w'); % export monopolar recording channels
     for i = 1:length(Sens)
         fprintf(monoRecordings, '%s\n', Sens{i});
     end

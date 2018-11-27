@@ -158,17 +158,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
              noteName = strrep(noteName,keepN,'CHNAME');
         end  
     end   
-    %% Avoid number starting with 0: 01 02 03,...
-    isZero = 0;
-    if numel(numZ) >= 2
-        for nz = 1:numel(numZ)
-            bgnZero = strncmp(numZ{nz},'0',1);
-            if bgnZero == 1 && str2double(numZ(nz))~= 0
-                isZero = 1;
-                noteName =  char(strrep(noteName,numZ(nz), num2str(str2double(numZ(nz)))));
-            end
-        end
-    end
+
     noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'.','');
     idScore = strfind(noteName,'_');
     if ~isempty(idScore)
@@ -376,22 +366,6 @@ for c=1:length(KeepEvent) % Navigate all stim events
     if strncmp(noteName,ptrn,1)
         noteName = char(noteName(2:end));
     end
-    z_sc = strfind(noteName,'_');
-    if ~isempty(z_sc)
-        zStr = char(regexp(noteName(1:z_sc(1)),'0\d*','Match'));
-        if numel(char(zStr)) == 4
-            if strcmp(zStr(1),'0') && strcmp(zStr(3),'0')
-                nonZ = strrep(zStr,'0','');
-                zStr = cellstr(zStr);
-                noteName = char(strrep(noteName,zStr,nonZ));
-            elseif strcmp(zStr(1),'0') && ~strcmp(zStr(3),'0')
-                cpyzStr = cellstr(zStr);
-                zStr(1) = '';
-                nonZ = cellstr(zStr);
-                noteName = char(strrep(noteName,cpyzStr,nonZ));
-            end
-        end
-    end
     %%
     [~,tmpdi]=regexp(noteName,'\d*','Match');
     noteNameNew=noteName;
@@ -411,27 +385,15 @@ for c=1:length(KeepEvent) % Navigate all stim events
     end
     chLabel = Label(1:iLastLetter);
     chInd = Label(iLastLetter+1:end);
-    if numel(chInd)==2
-        if isZero == 1
-            chInd1 = ['0', chInd(1)];
-            chInd2 = ['0', chInd(2)];
-            chLabel1 = strcat(chLabel, chInd1);
-            chLabel2 = strcat(chLabel, chInd2);
-        else
-            chInd1 = chInd(1);
-            chInd2 = chInd(2);
-            chLabel1 = strcat(chLabel, chInd1);
-            chLabel2 = strcat(chLabel, chInd2);
-        end
+    if numel(chInd)==2   
+        chInd1 = chInd(1);
+        chInd2 = chInd(2);
+        chLabel1 = strcat(chLabel, chInd1);
+        chLabel2 = strcat(chLabel, chInd2);        
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
-    elseif numel(chInd)==3
-        if isZero == 1
-            chInd1 = ['0', chInd(1)];
-            chLabel1 = strcat(chLabel, chInd1);
-        else
-            chInd1 = chInd(1);
-            chLabel1 = strcat(chLabel, chInd1);
-        end
+    elseif numel(chInd)==3        
+        chInd1 = chInd(1);
+        chLabel1 = strcat(chLabel, chInd1);        
         chInd2 = chInd(2:3);
         chLabel2 = strcat(chLabel,  chInd2);
         noteNameNew = strcat(chLabel1,'-',chLabel2, noteNameNew(idxScore(1):end));

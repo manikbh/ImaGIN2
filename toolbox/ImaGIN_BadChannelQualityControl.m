@@ -35,6 +35,7 @@ catch
 end
 elec= sensors(D,'eeg');  % add channels without positions into bad channels
 pos = elec.elecpos; 
+chanLbs = elec.label;
 idxNaN = find(isnan(pos(:,1)));
 if ~isempty(idxNaN)
     bIdx = [bIdx;idxNaN];
@@ -47,6 +48,12 @@ tNote(ismember(T.noIdx,bIdx)) = {'Bad'};
 T(:,9) = tNote;
 csvfilename = strcat(bPrefix,'.csv');
 writetable(T,csvfilename,'Delimiter',',');
+
+badchaFile = fopen(fullfile(badDir, [FileOut, '_bChans.txt']), 'w');
+for i = 1:length(bIdx)
+    fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});    
+end
+fclose(badchaFile);
 
 tmpIdx = D.badchannels; % old badchannels indices
 D = badchannels(D,tmpIdx,0); % reset meeg object bad indices
