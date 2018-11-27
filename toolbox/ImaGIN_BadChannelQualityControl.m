@@ -49,7 +49,7 @@ T(:,9) = tNote;
 csvfilename = strcat(bPrefix,'.csv');
 writetable(T,csvfilename,'Delimiter',',');
 
-badchaFile = fopen(fullfile(badDir, [FileOut, '_bChans.txt']), 'w');
+badchaFile = fopen(strcat(bPrefix,'_bChans.txt'), 'w');
 for i = 1:length(bIdx)
     fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});    
 end
