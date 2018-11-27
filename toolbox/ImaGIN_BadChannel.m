@@ -165,9 +165,9 @@ if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
         end
     end
 end
-NaNbIdx = bIdx;
+NaNbIdx = bIdx(:);
 if ~isempty(idxNaN)
-    bIdx = [bIdx;idxNaN];
+    bIdx = [bIdx(:);idxNaN(:)];
     bIdx = sort(unique(bIdx));
 end
 

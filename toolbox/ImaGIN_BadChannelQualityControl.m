@@ -38,7 +38,7 @@ pos = elec.elecpos;
 chanLbs = elec.label;
 idxNaN = find(isnan(pos(:,1)));
 if ~isempty(idxNaN)
-    bIdx = [bIdx;idxNaN];
+    bIdx = [bIdx(:);idxNaN(:)];
     bIdx = sort(unique(bIdx));
 end
 T = readtable(strcat(bPrefix,'.csv'));
