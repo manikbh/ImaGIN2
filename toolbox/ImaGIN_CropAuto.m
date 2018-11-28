@@ -283,17 +283,17 @@ for c=1:length(KeepEvent) % Navigate all stim events
         cnbre2= numel(numb{2});
         if str2double(numb(1)) == str2double(numb(2)) - 1
             sfix = noteName(1:(idx1(1)+cnbre1)-1);
-            noteName = strcat(upper(sfix),noteName(idx2(1):end));
+            noteName = strcat((sfix),noteName(idx2(1):end));
         elseif str2double(numb(1)) == str2double(numb(2)) + 1
             sfix = noteName(1:idx1(1)-1);
-            noteName = strcat(upper(sfix),num2str(numb{2}), num2str(numb{1}),noteName(idx2(1)+cnbre2:end));
+            noteName = strcat((sfix),num2str(numb{2}), num2str(numb{1}),noteName(idx2(1)+cnbre2:end));
         else
             if str2double(numb(1)) > str2double(numb(2))
                 sfix = noteName(1:idx1(1)-1);
-                noteName = strcat(upper(sfix),num2str(numb{2}), num2str(numb{1}),noteName(idx2(1)+cnbre2:end));
+                noteName = strcat((sfix),num2str(numb{2}), num2str(numb{1}),noteName(idx2(1)+cnbre2:end));
             elseif str2double(numb(1)) < str2double(numb(2))
                 sfix = noteName(1:idx1(1)-1);
-                noteName = strcat(upper(sfix),num2str(numb{1}), num2str(numb{2}),noteName(idx2(1)+cnbre2:end));
+                noteName = strcat((sfix),num2str(numb{1}), num2str(numb{2}),noteName(idx2(1)+cnbre2:end));
             end
         end
 
@@ -339,7 +339,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
             xsub3 = '0us';
         end
         
-        FullN = strcat(upper(xsub0),'_',xsub1,'_',xsub2,'_',xsub3);
+        FullN = strcat((xsub0),'_',xsub1,'_',xsub2,'_',xsub3);
         FullN = char(unique(FullN));
         FullN = FullN(1,:);
         if isempty(FullN)
@@ -360,7 +360,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
         noteName = char(strcat(subn1,noteName(idxn1+1:end)));
     end 
     
-    noteName = strrep(noteName,'CHNAME',upper(keepN));  
+    noteName = strrep(noteName,'CHNAME',(keepN));  
     
     ptrn = ',';
     if strncmp(noteName,ptrn,1)

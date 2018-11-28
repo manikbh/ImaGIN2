@@ -273,16 +273,14 @@ if KeepEvent == 1 % Navigate all stim events
     end
 
     %%
-    [~,tmpdi]=regexp(noteName,'\d*','Match');
-    noteNameNew=noteName;
-    noteNameNew(1:tmpdi(1)-1)=upper(noteNameNew(1:tmpdi(1)-1));
-    noteNameNew = strrep(noteNameNew,'''','p');     %to avoid ' in the name
-    
+    [~,tmpdi] = regexp(noteName,'\d*','Match');
+    noteNameNew = noteName;
+    noteNameNew(1:tmpdi(1)-1) = upper(noteNameNew(1:tmpdi(1)-1));
     idxScore = strfind(noteNameNew,'_');
     if isempty(idxScore)
         return;
     end
-    Label    = noteNameNew(1:idxScore(1)-1);
+    Label = noteNameNew(1:idxScore(1)-1);
     iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
     if isempty(iLastLetter) || (iLastLetter == length(Label))
         return;

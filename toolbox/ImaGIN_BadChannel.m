@@ -148,10 +148,16 @@ if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
     
     chlb_2d = {ch1_2d,ch2_2d};
     if ~isempty(chlb) || ~isempty(chlb_2d)
-        chInd  = find(ismember(chanLbs,chlb));
-        if isempty(chInd)
-            chInd  = find(ismember(chanLbs,chlb_2d));
+        chInd1  = find(strcmp(chanLbs,ch1));
+        chInd2  = find(strcmp(chanLbs,ch2));        
+        if isempty(chInd1)
+            chInd1  = find(strcmp(chanLbs,ch1_2d));
+        end        
+        if isempty(chInd2)
+            chInd2  = find(strcmp(chanLbs,ch2_2d));
         end
+        chInd = [chInd1;chInd2];
+        
         if ~isempty(chInd)
             if isempty(find(any(bIdx==chInd(1)), 1))
                 bIdx(end+1) = [chInd(1)];
@@ -165,7 +171,10 @@ if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
         end
     end
 end
-NaNbIdx = bIdx(:);
+bIdx = bIdx(:);
+NaNbIdx = bIdx;
+interIdx = intersect(NaNbIdx,idxNaN);
+
 if ~isempty(idxNaN)
     bIdx = [bIdx(:);idxNaN(:)];
     bIdx = sort(unique(bIdx));
@@ -177,7 +186,7 @@ end
 badIdxFile = fopen(fullfile(badDir, [FileOut, '_bIdx.txt']), 'w');
 badchaFile = fopen(fullfile(badDir, [FileOut, '_bChans.txt']), 'w');
 for i = 1:length(bIdx)
-    fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});
+    fprintf(badchaFile, '%d %s\n', bIdx(i), char(chanLbs{bIdx(i)}));
     fprintf(badIdxFile, '%d\n', bIdx(i));
 end
 fclose(badchaFile);
@@ -189,17 +198,18 @@ Tnew = [T channelClass];
 Tnew.Properties.VariableNames{'Var9'} = 'Note';
 csvfilename = fullfile(badDir, [FileOut, '.csv']); % Save feature table & badchannels indices
 writetable(Tnew,csvfilename,'Delimiter',',');
-
 try
     monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', FileOut, '.txt']), 'w'); % export monopolar recording channels
     for i = 1:length(Sens)
-        if ~any(strcmp(Sens(i), chanLbs(bIdx)))
-            fprintf(monoRecordings, '%s\n', Sens{i});
+        if isempty(find(strcmp(Sens{i}, chanLbs(bIdx)),1))
+            if isempty(regexpi(char(Sens{i}),'ecg'))
+                fprintf(monoRecordings, '%s\n', char(Sens{i}));
+            end
         end
     end
     fclose(monoRecordings);
 catch
-    disp('Monopolar recordings file not created.')
+    disp('Monopolar recordings file not saved.')
 end
 
 % Add badchannel index in meeg object
@@ -232,8 +242,10 @@ if n_c >= Size
     for i2 = 1:tmp
         figure(i2);
         set(gcf,'Position',[629 -17 702 1101])
-        for i3 = 1:Size
-            if intersect(i3+(i2-1)*Size,NaNbIdx) == i3+(i2-1)*Size      
+        for i3 = 1:Size            
+            if intersect(i3+(i2-1)*Size,interIdx) == i3+(i2-1)*Size 
+                    color = 'm'; % Channel doesn't have position and is bad
+            elseif intersect(i3+(i2-1)*Size,NaNbIdx) == i3+(i2-1)*Size  
                 color = 'r'; %Bad channels will be printed in red
             elseif intersect(i3+(i2-1)*Size,idxNaN) == i3+(i2-1)*Size
                 color = 'b'; %NaN channels will be printed in blue
@@ -261,8 +273,12 @@ if n_c >= Size
         figure(tmp + 1)
         set(gcf,'Position',[629 -17 702 1101])
         for i4 = 1:rmd
-            if intersect(i3+(i2-1)*Size+i4,bIdx)== i3+(i2-1)*Size+i4
+            if intersect(i3+(i2-1)*Size,interIdx)+i4 == i3+(i2-1)*Size+i4
+                 color = 'm';
+            elseif intersect(i3+(i2-1)*Size+i4,NaNbIdx)== i3+(i2-1)*Size+i4
                 color = 'r';
+            elseif intersect(i3+(i2-1)*Size+i4,idxNaN) == i3+(i2-1)*Size+i4
+                color = 'b';
             else
                 color = 'k';
             end
@@ -284,8 +300,12 @@ else
     figure(1)
     set(gcf,'Position',[629 -17 702 1101])
     for i5 = 1:n_c
-        if intersect(i5,bIdx)== i5
+        if intersect(i5,interIdx)== i5
+            color = 'm';
+        elseif intersect(i5,NaNbIdx)== i5
             color = 'r';
+        elseif intersect(i5,idxNaN)== i5
+            color = 'b';
         else
             color = 'k';
         end
