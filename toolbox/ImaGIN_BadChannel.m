@@ -193,11 +193,13 @@ writetable(Tnew,csvfilename,'Delimiter',',');
 try
     monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', FileOut, '.txt']), 'w'); % export monopolar recording channels
     for i = 1:length(Sens)
-        fprintf(monoRecordings, '%s\n', Sens{i});
+        if ~any(strcmp(Sens(i), chanLbs(bIdx)))
+            fprintf(monoRecordings, '%s\n', Sens{i});
+        end
     end
     fclose(monoRecordings);
 catch
-    disp('monolar recordings file not created.')
+    disp('Monopolar recordings file not created.')
 end
 
 % Add badchannel index in meeg object
