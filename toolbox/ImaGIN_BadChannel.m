@@ -43,161 +43,169 @@ else
     trainDir = fileparts(mfilename('fullpath'));
 end
 
+if (nargin >= 1) && isfield(S, 'toCheck') && ~isempty(S.toCheck)
+    toCheck = S.toCheck;
+else
+    toCheck = 'toCheck';
+end
 
 % Detect bad channels indices and save summary images
 % Load the cropped meeg object
 D = spm_eeg_load(FileIn);
 
-% if badchanel file exists, "text file ending with _bIdx"
-% no computation is needed, load and put them in spm object.
-% if exist(fullfile(badDir, [FileOut,'_bIdx.txt']),'file') == 2 
-%     bIdx  = load(fullfile(badDir, [FileOut,'_bIdx.txt']));
-% elseif exist(fullfile(badDir, ['BadChannels_', FileOut,'_bIdx.txt']),'file') == 2
-%     bIdx  = load(fullfile(badDir, ['BadChannels_', FileOut,'_bIdx.txt']));   
-% else
-% Compute signal features
-clear S2;
-S2.FileName = FileIn;
-if ~isempty(D.events) && ~isempty(D.events.type) && ismember('Stim', {D.events.type})
-    S2.InterpolationFilter = 1;
-else
-    S2.InterpolationFilter = 0;
-end
-
-T = ImaGIN_FeatureSEEG(S2);
-
-% If the trained classifier is not available: compute it
-trainedFile = fullfile(trainDir, 'ImaGIN_trainedClassifier.mat');
-if ~exist(trainedFile, 'file')
-    % Get train base file
-    trainBaseFile = fullfile(trainDir, 'ImaGIN_trainBaseFeatures.mat');
-    if ~exist(trainBaseFile, 'file')
-        error(['File ' trainBaseFile ' was not found.']);
-    end
-    % Load the train base
-    trainBase = load(trainBaseFile);
-    % Train the classifier
-    trainedClassifier = ImaGIN_trainClassifier(trainBase.predictors, trainBase.response);
-    % Save results
-    save(trainedFile, '-struct', 'trainedClassifier');
-    % Otherwise, load the trained classifier
-else
-    trainedClassifier = load(trainedFile);
-end
-
-% Predict new dataset
-channelClass = trainedClassifier.predictFcn(T(:,2:8));
-% Get list of detected bad channels
-bIdx = T.noIdx(strcmp(channelClass, 'Bad'));
-
-%%
-% In case disconnected electrode doesn't have stimulation artefact
-% specific for some FTRACT datasets
 chanLbs = D.chanlabels;
-
-elec = sensors(D,'eeg');  % add channels without positions into bad channels
+elec = sensors(D,'eeg');  
 pos  = elec.elecpos; 
 Sens = elec.label;
 idxNaN = find(isnan(pos(:,1)));
-
-% try
-%     chanLbs = char(chanLbs);
-% catch
-%     chanLbs = char(vertcat(chanLbs{1,:}));
-% end
-% chanLbs = strrep(cellstr(chanLbs),'''','p');
-crFname = D.fname;
-crFname = strrep(crFname,'welectrodes_','');
-undsc   = strfind(crFname,'_'); % Ap12_3mA_1Hz_1050us becomes Ap01-Ap02_3mA_1Hz_1050us with new convention
-idxDush = strfind(crFname,'-');
-Pulse   = strfind(crFname,'us');
-Amp     = strfind(crFname,'mA');
-Frq     = strfind(crFname,'Hz');
-if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
-    if ~isempty(idxDush)
-        ch1 = crFname(1:idxDush(1)-1);
-        ch2 = crFname(idxDush(1)+1:undsc(1)-1);
+% if badchanel file exists, "text file ending with _bIdx"
+% no computation is needed, load and put them in spm object.
+if exist(fullfile(badDir, [FileOut,'_bChans.txt']),'file') == 2 && strcmpi(toCheck,'OK')
+    bChansFileName  = fullfile(badDir, [FileOut,'_bChans.txt']);
+    FID = fopen(bChansFileName);
+    bChans = textscan(FID,'%d %s');
+    fclose(FID);
+    bIdx = bChans{1};
+    interIdx = intersect(bIdx,idxNaN);
+    NaNbIdx  = setdiff(bIdx,idxNaN);
+    ixNaN    = setdiff(idxNaN, bIdx);
+else
+    % Do all computations    
+    clear S2;
+    S2.FileName = FileIn;
+    if ~isempty(D.events) && ~isempty(D.events.type) && ismember('Stim', {D.events.type})
+        S2.InterpolationFilter = 1;
     else
-        ch1 = '';
-        ch2 = '';
+        S2.InterpolationFilter = 0;
     end
     
-    iLastLetter1 = find(~ismember(ch1, '0123456789'), 1, 'last');
-    iLastLetter2 = find(~ismember(ch2, '0123456789'), 1, 'last');
-    % If there is not electrode label or no index: wrong naming
-    if isempty(iLastLetter1) || (iLastLetter1 == length(ch1))
-        return;
-    end
+    T = ImaGIN_FeatureSEEG(S2);
     
-    if isempty(iLastLetter2) || (iLastLetter2 == length(ch2))
-        return;
-    end
-    % Find channel index
-    chLabel1 = ch1(1:iLastLetter1);
-    chInd1 = str2num(ch1(iLastLetter1+1:end));
-    chLabel2 = ch2(1:iLastLetter2);
-    chInd2 = str2num(ch2(iLastLetter2+1:end));
-    
-    ch1 = sprintf('%s%0d', chLabel1, chInd1);
-    ch2 = sprintf('%s%0d', chLabel2, chInd2);
-    
-    ch1_2d = sprintf('%s%02d', chLabel1, chInd1);
-    ch2_2d = sprintf('%s%02d', chLabel2, chInd2);
-    
-    chlb = {ch1,ch2};
-    
-    chlb_2d = {ch1_2d,ch2_2d};
-    if ~isempty(chlb) || ~isempty(chlb_2d)
-        chInd1  = find(strcmp(chanLbs,ch1));
-        chInd2  = find(strcmp(chanLbs,ch2));        
-        if isempty(chInd1)
-            chInd1  = find(strcmp(chanLbs,ch1_2d));
-        end        
-        if isempty(chInd2)
-            chInd2  = find(strcmp(chanLbs,ch2_2d));
+    % If the trained classifier is not available: compute it
+    trainedFile = fullfile(trainDir, 'ImaGIN_trainedClassifier.mat');
+    if ~exist(trainedFile, 'file')
+        % Get train base file
+        trainBaseFile = fullfile(trainDir, 'ImaGIN_trainBaseFeatures.mat');
+        if ~exist(trainBaseFile, 'file')
+            error(['File ' trainBaseFile ' was not found.']);
         end
-        chInd = [chInd1;chInd2];
+        % Load the train base
+        trainBase = load(trainBaseFile);
+        % Train the classifier
+        trainedClassifier = ImaGIN_trainClassifier(trainBase.predictors, trainBase.response);
+        % Save results
+        save(trainedFile, '-struct', 'trainedClassifier');
+        % Otherwise, load the trained classifier
+    else
+        trainedClassifier = load(trainedFile);
+    end
+    
+    % Predict new dataset
+    channelClass = trainedClassifier.predictFcn(T(:,2:8));
+    % Get list of detected bad channels
+    bIdx = T.noIdx(strcmp(channelClass, 'Bad'));
+    
+    %%
+    % In case disconnected electrode doesn't have stimulation artefact
+    % specific for some FTRACT datasets
+    
+   
+    
+    crFname = D.fname;
+    crFname = strrep(crFname,'welectrodes_','');
+    undsc   = strfind(crFname,'_'); % Ap12_3mA_1Hz_1050us becomes Ap01-Ap02_3mA_1Hz_1050us with new convention
+    idxDush = strfind(crFname,'-');
+    Pulse   = strfind(crFname,'us');
+    Amp     = strfind(crFname,'mA');
+    Frq     = strfind(crFname,'Hz');
+    if numel(undsc) == 4 && ~isempty(Pulse)&& ~isempty(Amp) && ~isempty(Frq)
+        if ~isempty(idxDush)
+            ch1 = crFname(1:idxDush(1)-1);
+            ch2 = crFname(idxDush(1)+1:undsc(1)-1);
+        else
+            ch1 = '';
+            ch2 = '';
+        end
         
-        if ~isempty(chInd)
-            if isempty(find(any(bIdx==chInd(1)), 1))
-                bIdx(end+1) = [chInd(1)];
+        iLastLetter1 = find(~ismember(ch1, '0123456789'), 1, 'last');
+        iLastLetter2 = find(~ismember(ch2, '0123456789'), 1, 'last');
+        % If there is not electrode label or no index: wrong naming
+        if isempty(iLastLetter1) || (iLastLetter1 == length(ch1))
+            return;
+        end
+        
+        if isempty(iLastLetter2) || (iLastLetter2 == length(ch2))
+            return;
+        end
+        % Find channel index
+        chLabel1 = ch1(1:iLastLetter1);
+        chInd1 = str2num(ch1(iLastLetter1+1:end));
+        chLabel2 = ch2(1:iLastLetter2);
+        chInd2 = str2num(ch2(iLastLetter2+1:end));
+        
+        ch1 = sprintf('%s%0d', chLabel1, chInd1);
+        ch2 = sprintf('%s%0d', chLabel2, chInd2);
+        
+        ch1_2d = sprintf('%s%02d', chLabel1, chInd1);
+        ch2_2d = sprintf('%s%02d', chLabel2, chInd2);
+        
+        chlb = {ch1,ch2};
+        
+        chlb_2d = {ch1_2d,ch2_2d};
+        if ~isempty(chlb) || ~isempty(chlb_2d)
+            chInd1  = find(strcmp(chanLbs,ch1));
+            chInd2  = find(strcmp(chanLbs,ch2));
+            if isempty(chInd1)
+                chInd1  = find(strcmp(chanLbs,ch1_2d));
             end
-            if numel(chInd) > 1
-                if isempty(find(any(bIdx==chInd(2)), 1))
-                    bIdx(end+1) = chInd(2);
+            if isempty(chInd2)
+                chInd2  = find(strcmp(chanLbs,ch2_2d));
+            end
+            chInd = [chInd1;chInd2];
+            
+            if ~isempty(chInd)
+                if isempty(find(any(bIdx==chInd(1)), 1))
+                    bIdx(end+1) = [chInd(1)];
                 end
+                if numel(chInd) > 1
+                    if isempty(find(any(bIdx==chInd(2)), 1))
+                        bIdx(end+1) = chInd(2);
+                    end
+                end
+                bIdx = sort(bIdx);
             end
-            bIdx = sort(bIdx);
         end
     end
+    bIdx = bIdx(:);    
+    interIdx = intersect(bIdx,idxNaN);
+    NaNbIdx  = setdiff(bIdx,idxNaN);
+    ixNaN    = setdiff(idxNaN,bIdx);
+    if ~isempty(idxNaN)
+        bIdx = [bIdx(:);idxNaN(:)];
+        bIdx = sort(unique(bIdx));
+    end
+    
+    %%
+    % Save bad channel indices in .txt file
+    
+    badIdxFile = fopen(fullfile(badDir, [FileOut, '_bIdx.txt']), 'w');
+    badchaFile = fopen(fullfile(badDir, [FileOut, '_bChans.txt']), 'w');
+    for i = 1:length(bIdx)
+        fprintf(badchaFile, '%d %s\n', bIdx(i), char(chanLbs{bIdx(i)}));
+        fprintf(badIdxFile, '%d \n', bIdx(i));
+    end
+    fclose(badchaFile);
+    fclose(badIdxFile);
+    
+    Lia = ismember(T.noIdx,bIdx);
+    channelClass(Lia) = {'Bad'};
+    Tnew = [T channelClass];
+    Tnew.Properties.VariableNames{'Var9'} = 'Note';
+    csvfilename = fullfile(badDir, [FileOut, '.csv']); % Save feature table & badchannels indices
+    writetable(Tnew,csvfilename,'Delimiter',',');
+    
 end
-bIdx = bIdx(:);
-NaNbIdx = bIdx;
-interIdx = intersect(NaNbIdx,idxNaN);
 
-if ~isempty(idxNaN)
-    bIdx = [bIdx(:);idxNaN(:)];
-    bIdx = sort(unique(bIdx));
-end
-
-%%
-% Save bad channel indices in .txt file
-
-badIdxFile = fopen(fullfile(badDir, [FileOut, '_bIdx.txt']), 'w');
-badchaFile = fopen(fullfile(badDir, [FileOut, '_bChans.txt']), 'w');
-for i = 1:length(bIdx)
-    fprintf(badchaFile, '%d %s\n', bIdx(i), char(chanLbs{bIdx(i)}));
-    fprintf(badIdxFile, '%d\n', bIdx(i));
-end
-fclose(badchaFile);
-fclose(badIdxFile);
-
-Lia = ismember(T.noIdx,bIdx);
-channelClass(Lia) = {'Bad'};
-Tnew = [T channelClass];
-Tnew.Properties.VariableNames{'Var9'} = 'Note';
-csvfilename = fullfile(badDir, [FileOut, '.csv']); % Save feature table & badchannels indices
-writetable(Tnew,csvfilename,'Delimiter',',');
 try
     monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', FileOut, '.txt']), 'w'); % export monopolar recording channels
     for i = 1:length(Sens)
@@ -233,7 +241,7 @@ if ~exist(figDir, 'dir')
     mkdir(figDir);
 end
 
-%     close all;
+% close all;
 
 Size = 8;  % Number of channels per screenshot
 n_c  = size(D,1);
@@ -247,7 +255,7 @@ if n_c >= Size
                     color = 'm'; % Channel doesn't have position and is bad
             elseif intersect(i3+(i2-1)*Size,NaNbIdx) == i3+(i2-1)*Size  
                 color = 'r'; %Bad channels will be printed in red
-            elseif intersect(i3+(i2-1)*Size,idxNaN) == i3+(i2-1)*Size
+            elseif intersect(i3+(i2-1)*Size,ixNaN) == i3+(i2-1)*Size
                 color = 'b'; %NaN channels will be printed in blue
             else
                 color = 'k'; %Good channels will be printed in black
@@ -273,11 +281,11 @@ if n_c >= Size
         figure(tmp + 1)
         set(gcf,'Position',[629 -17 702 1101])
         for i4 = 1:rmd
-            if intersect(i3+(i2-1)*Size,interIdx)+i4 == i3+(i2-1)*Size+i4
+            if intersect(i3+(i2-1)*Size+i4,interIdx)== i3+(i2-1)*Size+i4
                  color = 'm';
             elseif intersect(i3+(i2-1)*Size+i4,NaNbIdx)== i3+(i2-1)*Size+i4
                 color = 'r';
-            elseif intersect(i3+(i2-1)*Size+i4,idxNaN) == i3+(i2-1)*Size+i4
+            elseif intersect(i3+(i2-1)*Size+i4,ixNaN) == i3+(i2-1)*Size+i4
                 color = 'b';
             else
                 color = 'k';
@@ -304,7 +312,7 @@ else
             color = 'm';
         elseif intersect(i5,NaNbIdx)== i5
             color = 'r';
-        elseif intersect(i5,idxNaN)== i5
+        elseif intersect(i5,ixNaN)== i5
             color = 'b';
         else
             color = 'k';

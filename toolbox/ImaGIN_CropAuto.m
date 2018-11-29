@@ -542,7 +542,33 @@ for c=1:length(KeepEvent) % Navigate all stim events
         S2.Offset  = 0;
         D = ImaGIN_TimeZero(S2);
         cropFileNameMat = fullfile(DirOut, strcat(namePrefix,'.mat'));
-        if exist(cropFileNameMat, 'file') ~= 2 && isempty(iChanMatch1) &&  isempty(iChanMatch1)
+        cropFileNameDat = fullfile(DirOut, strcat(namePrefix,'.dat'));
+        scoreIDX = strfind(namePrefix,'_');
+        if numel(scoreIDX) == 4
+            cropNumber = str2double(namePrefix(scoreIDX(4)+1:end));
+            if ~isnan(cropNumber) && cropNumber > 1
+                
+                if exist(cropFileNameMat,'file')== 2
+                    Dcrop = spm_eeg_load(cropFileNameMat);
+                    refCropFileNameMats = dir(fullfile(DirOut, strcat(namePrefix(1:scoreIDX(4)),'*.mat')));
+                    for i = 1:size(refCropFileNameMats,1)
+                        refCropFileNameMat  = fullfile(DirOut, refCropFileNameMats(i).name);
+                        if ~strcmp(refCropFileNameMat,cropFileNameMat)
+                            if exist(refCropFileNameMat,'file')== 2 && exist(cropFileNameMat,'file')== 2
+                                Dref  = spm_eeg_load(refCropFileNameMat);
+                                if isequal(Dref(:,:,:),Dcrop(:,:,:))
+                                    delete(cropFileNameMat);
+                                    delete(cropFileNameDat);
+                                end
+                                clear Dref;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+         
+        if exist(cropFileNameMat, 'file') == 2 && (isempty(iChanMatch1) || isempty(iChanMatch2))
             matDelCount =  matDelCount + 1;
             matDeleted(end+1) = {namePrefix};
         end
