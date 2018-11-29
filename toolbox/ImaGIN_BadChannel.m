@@ -69,6 +69,7 @@ if exist(fullfile(badDir, [FileOut,'_bChans.txt']),'file') == 2 && strcmpi(toChe
     interIdx = intersect(bIdx,idxNaN);
     NaNbIdx  = setdiff(bIdx,idxNaN);
     ixNaN    = setdiff(idxNaN, bIdx);
+    fprintf('MESSAGE: %s used bIdx previously validated!', FileIn')
 else
     % Do all computations    
     clear S2;
