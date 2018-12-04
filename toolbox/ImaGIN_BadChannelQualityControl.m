@@ -50,11 +50,12 @@ csvfilename = strcat(bPrefix,'.csv');
 writetable(T,csvfilename,'Delimiter',',');
 
 badchaFile = fopen(strcat(bPrefix,'_bChans.txt'), 'w');
-for i = 1:length(bIdx)
-    fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});    
+if ~isempty(bIdx)
+    for i = 1:length(bIdx)
+        fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});
+    end    
 end
 fclose(badchaFile);
-
 tmpIdx = D.badchannels; % old badchannels indices
 D = badchannels(D,tmpIdx,0); % reset meeg object bad indices
 
