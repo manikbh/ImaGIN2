@@ -311,6 +311,12 @@ if KeepEvent == 1 % Navigate all stim events
         chLabel1 = strcat(chLabel, chInd1);
         chLabel2 = strcat(chLabel, chInd2);
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
+    else
+        chInd1 = '';
+        chInd2 = '';
+        chLabel1 = Anota;
+        chLabel2 = Anota;
+        noteNameNew = Anota;
     end
 else
    chInd1 = '';
