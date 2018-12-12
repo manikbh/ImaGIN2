@@ -279,15 +279,15 @@ if size(DD,1)>1
 end
 
 for i1 = 1:size(DD,1)
-    try
-        [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)),S{i1});
-    catch
-        try
+%     try
+%         [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)),S{i1});
+%     catch
+%         try
             [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)),S);
-        catch
-            [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)));
-        end
-    end
+%         catch
+%             [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)));
+%         end
+%     end
     if (i1==1) && ~exist('S', 'var')
         S.Method=D.tf.Method;
         switch D.tf.Method
@@ -1227,7 +1227,7 @@ function D = ComputeMultitaper(D, k, TimeWindow, TimeWindowWidth, Pre)
 
     % Correct the time step to the closest multiple of the sampling interval to keep the time axis uniform
     fsampletrue = 1./diff(time(1:2));
-    timesteptrue = 1e3*round(fsampletrue*S.timestep*1e-3)/fsampletrue;
+    timesteptrue = 1e3*max([1 round(fsampletrue*S.timestep*1e-3)])/fsampletrue;
 
     timeoi=(1e3*time(1)+(S.timeres/2)):timesteptrue:(1e3*time(end)-(S.timeres/2)-1e3/fsample(D)); % Time axis
     timeoi=1e3*unique(round(1e-3*timeoi .* fsampletrue) ./ fsampletrue);

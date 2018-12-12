@@ -100,7 +100,17 @@ if ~isnumeric(BB)
 else
     if isfield(DD{1},'Nfrequencies')
         for i2=1:length(DD)
-            index=find(DD{i2}.tf.time>=min(BB)&DD{i2}.tf.time<=max(BB));
+            
+            nwindow=length(BB)/2;
+            if nwindow==1
+                index=find(DD{i2}.tf.time>=min(BB)&DD{i2}.tf.time<=max(BB));
+            else
+                index=[];
+                for i3=1:nwindow
+                    index=[index find(DD{i2}.tf.time>=BB(2*(i3-1)+1)&DD{i2}.tf.time<=BB(2*i3))];
+                end
+            end
+            
             D=DD{i2};
             data=D(:,:,:,:);
             for i1=1:D.nchannels
