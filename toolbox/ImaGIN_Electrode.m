@@ -79,6 +79,9 @@ catch
             Name = readName(filename);
         case '.csv'
             [Name, Position] = readCsv(filename);
+            if all(isnan(Position))
+                error('Anatomy not found: possibly patient implanted before 2009. Check implantation scheme!');
+            end
         otherwise 
             disp('ImaGIN> ERROR: Invalid input file type.');
             return
@@ -295,7 +298,11 @@ function [Name, Pos] = readCsv(filename)
         % Split by columns (tab-separated file)
         tmp = strsplit(tmp, '\t');
         Name{i1} = tmp{iColName};
-        Pos(i1,1:3) = str2num(tmp{iColPos});
+        if ~isempty(str2num(tmp{iColPos}))
+            Pos(i1,1:3) = str2num(tmp{iColPos});
+        else
+            Pos(i1,1:3) = NaN;
+        end
         i1 = i1 + 1;
     end
     fclose(fid);

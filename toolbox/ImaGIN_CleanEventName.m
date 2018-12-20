@@ -278,12 +278,22 @@ if KeepEvent == 1 % Navigate all stim events
     noteNameNew(1:tmpdi(1)-1) = upper(noteNameNew(1:tmpdi(1)-1));
     idxScore = strfind(noteNameNew,'_');
     if isempty(idxScore)
+        chInd1 = '';
+        chInd2 = '';
+        chLabel1 = Anota;
+        chLabel2 = Anota;
+        noteNameNew = Anota;
         return;
     end
     Label = noteNameNew(1:idxScore(1)-1);
     iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
     if isempty(iLastLetter) || (iLastLetter == length(Label))
-        return;
+        chInd1 = '';
+        chInd2 = '';
+        chLabel1 = Anota;
+        chLabel2 = Anota;
+        noteNameNew = Anota;
+        return;        
     end
     chLabel = Label(1:iLastLetter);
     chInd = Label(iLastLetter+1:end);
