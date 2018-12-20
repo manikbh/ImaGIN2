@@ -3,9 +3,9 @@ function [sFile, ChannelMat] = in_fopen_micromed(DataFile)
 
 % @=============================================================================
 % This function is part of the Brainstorm software:
-% http://neuroimage.usc.edu/brainstorm
+% https://neuroimage.usc.edu/brainstorm
 % 
-% Copyright (c)2000-2017 University of Southern California & McGill University
+% Copyright (c)2000-2018 University of Southern California & McGill University
 % This software is distributed under the terms of the GNU General Public License
 % as published by the Free Software Foundation. Further details on the GPLv3
 % license can be found at http://www.gnu.org/copyleft/gpl.html.
@@ -20,7 +20,7 @@ function [sFile, ChannelMat] = in_fopen_micromed(DataFile)
 % =============================================================================@
 %
 % Authors:  Guillaume Becq, 2010
-%           Adapted by Francois Tadel for Brainstorm, 2017
+%           Adapted by Francois Tadel for Brainstorm, 2018
 
 
 %% ===== READ HEADER =====
@@ -405,11 +405,13 @@ sFile.header       = hdr;
 % Comment: short filename
 [fPath, fBase, fExt] = bst_fileparts(DataFile);
 sFile.comment = fBase;
-
+% Acquisition date
+sFile.acq_date = datestr(datenum([hdr.acquisition.year, hdr.acquisition.month, hdr.acquisition.day]), 'dd-mmm-yyyy');
 
 
 %% ===== CREATE EMPTY CHANNEL FILE =====
 nChannels = hdr.num_channels;
+ChannelMat = db_template('channelmat');
 ChannelMat.Comment = [sFile.device ' channels'];
 ChannelMat.Channel = repmat(db_template('channeldesc'), [1, nChannels]);
 % Separate channels with different amplitude ranges
@@ -433,6 +435,12 @@ for iChan = 1:nChannels
     chname = strrep(hdr.electrode(iChan).label, '.', '');
     chname(chname == 0) = [];
     if ~isempty(chname)
+        % Replace "g,1" and "g,2" with "g1" and "g2"
+        if isequal(chname, 'g,1') && ~ismember('g1', {hdr.electrode.label})
+            chname = 'g1';
+        elseif isequal(chname, 'g,2') && ~ismember('g2', {hdr.electrode.label})
+            chname = 'g2';
+        end
         ChannelMat.Channel(iChan).Name = chname;
     else
         ChannelMat.Channel(iChan).Type = 'MISC';
@@ -444,6 +452,9 @@ for iChan = 1:nChannels
     ChannelMat.Channel(iChan).Loc = [sFile.header.electrode(iChan).x; ...
                                      sFile.header.electrode(iChan).y; ...
                                      sFile.header.electrode(iChan).z];
+    if isequal(ChannelMat.Channel(iChan).Loc, [0;0;0])
+        ChannelMat.Channel(iChan).Loc = [];
+    end
     % Comment = reference
     ChannelMat.Channel(iChan).Comment = hdr.electrode(iChan).reference;
     % Fields that are not relevant here
