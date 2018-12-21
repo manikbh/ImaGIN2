@@ -133,6 +133,16 @@ for i0 = 1:size(t,1)
 
     % Loop on all channels available in the file
     for i1 = 1:length(Sensors.label)
+        % Replace "g,1", "g-1" and "g,2", "g-2" with "g1" and "g2"
+        if isequal(Sensors.label{i1}, 'g,1') && ~ismember('g1', Sensors.label)
+            Sensors.label{i1} = 'g1';
+        elseif isequal(Sensors.label{i1}, 'g,2') && ~ismember('g2', Sensors.label)
+            Sensors.label{i1} = 'g2';
+        elseif isequal(Sensors.label{i1}, 'g-1') && ~ismember('g1', Sensors.label)
+            Sensors.label{i1} = 'g1';  
+        elseif isequal(Sensors.label{i1}, 'g-2') && ~ismember('g2', Sensors.label)
+            Sensors.label{i1} = 'g2';            
+        end        
         iChanPos = findChannel(Sensors.label{i1}, Name);
         % If the channel was already found in the list before: check the best option based on the case
         if ~isempty(iChanPos) && ~isempty(chMatchLog)
@@ -214,6 +224,16 @@ for i0 = 1:size(t,1)
     
     % Replace labels in D.channels
     for iChan = 1:length(SpmMat.D.channels)
+        % Replace "g,1", "g-1" and "g,2", "g-2" with "g1" and "g2"
+        if strcmpi(char(SpmMat.D.channels(iChan).label), 'g,1') 
+            SpmMat.D.channels(iChan).label = 'g1';
+        elseif strcmpi(char(SpmMat.D.channels(iChan).label), 'g,2') 
+            SpmMat.D.channels(iChan).label = 'g2';
+        elseif strcmpi(char(SpmMat.D.channels(iChan).label), 'g-1') 
+            SpmMat.D.channels(iChan).label = 'g1';  
+        elseif strcmpi(char(SpmMat.D.channels(iChan).label), 'g-2')
+            SpmMat.D.channels(iChan).label = 'g2';            
+        end 
         iChanMatch = find(strcmpi(SpmMat.D.channels(iChan).label, chMatchLog(:,1)));
         if (length(iChanMatch) == 1)
             SpmMat.D.channels(iChan).label = chMatchLog{iChanMatch,2};
