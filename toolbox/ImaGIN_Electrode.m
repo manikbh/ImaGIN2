@@ -173,6 +173,9 @@ for i0 = 1:size(t,1)
             chNotFound{end+1} = Sensors.label{i1};
         end
     end
+    if isempty(chMatchLog)
+        chMatchLog = repmat({''},1,2);        
+    end
     % Electrodes present in the CSV but not found in the SEEG recordings
     [~, ~, chTagsCSV] = ImaGIN_select_channels(Name);
     [~, ~, chTagsSEEG] = ImaGIN_select_channels(chMatchLog(:,2)');
