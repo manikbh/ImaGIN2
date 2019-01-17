@@ -631,17 +631,19 @@ fprintf('Number of stimulations cropped: %d\n\n',realCrps);
 txtf = dir(fullfile(DirOut,'*.txt')); % delete all .txt file after cropping
 txtf = {txtf.name};
 for k3 = 1:numel(txtf)
-    delete(fullfile(DirOut, txtf{k3}))
+    if isempty(strfind(txtf{k3},'CropsNoRecordings_log'))
+        delete(fullfile(DirOut, txtf{k3}))
+    end
 end
 if matDelCount > 0
-    logTxtFile = fullfile(DirOut, 'CropsNoRecordings_log.txt');
+    logTxtFile = fullfile(DirOut, [matFile,'CropsNoRecordings_log.txt']);
     fprintf('\n\n stim channels not recorded, Crop is deleted: \nn');
     try
-        fid = fopen(logTxtFile,'w');
+        fid = fopen(logTxtFile,'a');
         for i = 1:matDelCount
             fprintf('%s \n', matDeleted{i});
             fprintf(fid,'%s\n',matDeleted{i});
-            if exist(fullfile(DirOut, strcat(matDeleted{i},'.mat')), 'file') ~= 2
+            if exist(fullfile(DirOut, strcat(matDeleted{i},'.mat')), 'file') == 2
                 delete(fullfile(DirOut, strcat(matDeleted{i},'.mat')))
                 delete(fullfile(DirOut, strcat(matDeleted{i},'.dat')))
             end
