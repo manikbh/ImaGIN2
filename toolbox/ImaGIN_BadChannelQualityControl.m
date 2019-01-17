@@ -35,7 +35,8 @@ catch
 end
 elec= sensors(D,'eeg');  % add channels without positions into bad channels
 pos = elec.elecpos; 
-chanLbs = elec.label;
+Sens = elec.label;
+chanLbs = D.chanlabels;
 idxNaN = find(isnan(pos(:,1)));
 if ~isempty(idxNaN)
     bIdx = [bIdx(:);idxNaN(:)];
@@ -52,10 +53,25 @@ writetable(T,csvfilename,'Delimiter',',');
 badchaFile = fopen(strcat(bPrefix,'_bChans.txt'), 'w');
 if ~isempty(bIdx)
     for i = 1:length(bIdx)
-        fprintf(badchaFile, '%d %s\n', bIdx(i), chanLbs{bIdx(i)});
+        fprintf(badchaFile, '%d %s\n', bIdx(i), char(chanLbs{bIdx(i)}));
     end    
 end
 fclose(badchaFile);
+
+try
+    monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', cutName, '.txt']), 'w'); % export monopolar recording channels
+    for i = 1:length(Sens)
+        if isempty(find(strcmp(Sens{i}, chanLbs(bIdx)),1))
+            if isempty(regexpi(char(Sens{i}),'ecg'))
+                fprintf(monoRecordings, '%s\n', char(Sens{i}));
+            end
+        end
+    end
+    fclose(monoRecordings);
+catch
+    disp('Monopolar recordings file not saved.')
+end
+
 tmpIdx = D.badchannels; % old badchannels indices
 D = badchannels(D,tmpIdx,0); % reset meeg object bad indices
 
