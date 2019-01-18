@@ -385,31 +385,31 @@ for c=1:length(KeepEvent) % Navigate all stim events
     end
     chLabel = Label(1:iLastLetter);
     chInd = Label(iLastLetter+1:end);
-    if numel(chInd)==2   
+    if numel(chInd) == 2   
         chInd1 = chInd(1);
         chInd2 = chInd(2);
         chLabel1 = strcat(chLabel, chInd1);
         chLabel2 = strcat(chLabel, chInd2);        
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
-    elseif numel(chInd)==3        
+    elseif numel(chInd) == 3        
         chInd1 = chInd(1);
         chLabel1 = strcat(chLabel, chInd1);        
         chInd2 = chInd(2:3);
         chLabel2 = strcat(chLabel,  chInd2);
         noteNameNew = strcat(chLabel1,'-',chLabel2, noteNameNew(idxScore(1):end));
-    elseif numel(chInd)==4
+    elseif numel(chInd) == 4
         chInd1 = chInd(1:2);
         chInd2 = chInd(3:4);
         chLabel1 = strcat(chLabel,chInd1);
         chLabel2 = strcat(chLabel, chInd2);
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
-    elseif numel(chInd)==6
+    elseif numel(chInd) == 6
         chInd1 = chInd(1:3);
         chInd2 = chInd(4:6);
         chLabel1 = strcat(chLabel, chInd1);
         chLabel2 = strcat(chLabel, chInd2);
         noteNameNew = strcat(chLabel1, '-',chLabel2, noteNameNew(idxScore(1):end));
-    elseif isempty(chInd)
+    else
         chInd1 = '';
         chInd2 = '';
         chLabel1 = '';
