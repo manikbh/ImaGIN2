@@ -143,7 +143,7 @@ if 1==1
         else
             ok=0;
         end
-        if Th > 100 % VT: control infinite loop 
+        if Th > 1000 % VT: control infinite loop 
             ok = 0;
         end
     end
