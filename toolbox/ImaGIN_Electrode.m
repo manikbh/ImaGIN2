@@ -254,10 +254,18 @@ for i0 = 1:size(t,1)
         if isempty(iChanMatch1) && ~isempty(chInd1)
             tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
             iChanMatch1 = find(strcmpi(tmpchLabel1, chMatchLog(:,1)));
+            if isempty(iChanMatch1)
+                tmpchLabel1 = strrep(chLabel1, chInd1, ['0' chInd1]);
+                iChanMatch1 = find(strcmpi(tmpchLabel1, chMatchLog(:,1)));
+            end   
         end        
         if isempty(iChanMatch2) && ~isempty(chInd2)
             tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
             iChanMatch2 = find(strcmpi(tmpchLabel2, chMatchLog(:,1)));
+            if isempty(iChanMatch2)
+                tmpchLabel2 = strrep(chLabel2, chInd2, ['0' chInd2]);
+                iChanMatch2 = find(strcmpi(tmpchLabel2, chMatchLog(:,1)));
+            end
         end
 
         if (length(iChanMatch1) == 1)

@@ -441,6 +441,7 @@ for c=1:length(KeepEvent) % Navigate all stim events
     % S.Channels = [selCh1,selCh2]; 
     % S.FindBadChannels=0;
     %}
+    
     [stimTime,~,~] = ImaGIN_StimDetect(S);
     disp(KeepEvent(c)), disp(S.EvtName);
     stimFq = StimFreq;
