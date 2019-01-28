@@ -113,7 +113,7 @@ if ~isempty(thisN)
     KeepEvent = find(KeepEvent==idxN);
 end
 %% ------------------------------------------------
-for c=1:length(KeepEvent) % Navigate all stim events
+for c = 1:length(KeepEvent) % Navigate all stim events
     
     % Detect stimulations and stimulation indices & save in text file
     [pth,matFile,~]= fileparts(sFile);
@@ -374,17 +374,21 @@ for c=1:length(KeepEvent) % Navigate all stim events
         
     % Change of naming convention: Ap12_3mA_1Hz_1000us_1 becomes Ap1-Ap2_3mA_1Hz_1000us_1
     idxScore = strfind(noteNameNew,'_');
-    if isempty(idxScore)
-        return;
+    if ~isempty(idxScore) && idxScore(1) > 1
+        Label       = noteNameNew(1:idxScore(1)-1);
+        iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
+    else
+        Label       = '';
+        iLastLetter = '';
+    end
+    if ~isempty(iLastLetter) && length(Label) >= iLastLetter
+        chLabel =  Label(1:iLastLetter);
+        chInd   =  Label(iLastLetter+1:end);
+    else
+        chLabel = '';
+        chInd   = '';
     end
     
-    Label    = noteNameNew(1:idxScore(1)-1);
-    iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
-    if isempty(iLastLetter) || (iLastLetter == length(Label))
-        return;
-    end
-    chLabel = Label(1:iLastLetter);
-    chInd = Label(iLastLetter+1:end);
     if numel(chInd) == 2   
         chInd1 = chInd(1);
         chInd2 = chInd(2);
