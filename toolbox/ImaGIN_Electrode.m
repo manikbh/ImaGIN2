@@ -247,7 +247,28 @@ for i0 = 1:size(t,1)
     for iEvt = 1:length(SpmMat.D.trials.events)
         % Get channel name from event name
         EvtName = SpmMat.D.trials.events(iEvt).type;
-        [chLabel1, chLabel2, noteNameNew, chInd1, chInd2] = ImaGIN_CleanEventName(EvtName);     
+        [chLabel1, chLabel2, noteNameNew, chInd1, chInd2] = ImaGIN_CleanEventName(EvtName);  
+        if ~isempty(chInd1) && ~isempty(chInd2)
+            if str2double(chInd1) <  str2double(chInd2)
+                if str2double(chInd1) +1 ~= str2double(chInd2)
+                    chInd2tmp = num2str(str2double(chInd1) + 1);
+                    if numel(chInd1) ~= numel(chInd2)
+                        chInd2tmp = strcat('0',chInd2tmp);
+                    end
+                    chLabel2 = strrep(chLabel2,chInd2,chInd2tmp);
+                    chInd2   = chInd2tmp;
+                end
+            elseif str2double(chInd1) >  str2double(chInd2)
+                if str2double(chInd1) ~= str2double(chInd2) + 1
+                    chInd1tmp = num2str(str2double(chInd2) + 1);
+                    if numel(chInd2) ~= numel(chInd1)
+                        chInd1tmp = strcat('0',chInd1);
+                    end
+                    chLabel1 = strrep(chLabel1,chInd1,chInd1tmp);
+                    chInd1   = chInd1tmp;
+                end 
+            end
+        end
         % Replace with matching CSV name
         iChanMatch1 = find(strcmpi(chLabel1, chMatchLog(:,1)));
         iChanMatch2 = find(strcmpi(chLabel2, chMatchLog(:,1)));        

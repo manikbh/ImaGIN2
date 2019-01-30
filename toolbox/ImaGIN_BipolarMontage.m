@@ -130,7 +130,8 @@ for i0=1:size(Filename,1)
         [dir,name,~]=fileparts(newname);
         fid = fopen(fullfile(dir, ['recordings_' name '.txt']),'w');
         recording_output = (Dnew.sensors('eeg').label);
-        fprintf(fid,'%s\n',recording_output{:});
+        recording_outputGood = setdiff(recording_output, recording_output(BadChannelsBip));
+        fprintf(fid,'%s\n',recording_outputGood{:});
         fclose(fid);
     end
     
