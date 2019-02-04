@@ -84,12 +84,14 @@ for c=1:evsize % Navigate all available events
     xpr10  = 'crise';
     xpr11  = '\w*OFF\w*';
     xpr12  = '\w*t65535\w*';
+    xpr12b  = '\w*Test\w*';
     [ds,di]=regexp(Notes{c},'\d*','Match');
     if ~isempty(di)
         if ~isempty(regexpi(Notes{c},xpr4)) || ~isempty(regexpi(Notes{c},xpr5)) || ...
                 ~isempty(regexpi(Notes{c},xpr6)) || ~isempty(regexpi(Notes{c},xpr7)) || ...
                 ~isempty(regexpi(Notes{c},xpr8)) || ~isempty(regexpi(Notes{c},xpr9)) || ...
                 ~isempty(regexpi(Notes{c},xpr12))||~isempty(regexpi(Notes{c},xpr4b)) || ...
+                ~isempty(regexpi(Notes{c},xpr12b))|| ...
                 ~isempty(regexpi(Notes{c},xpr5b))|| ~isempty(regexpi(Notes{c},xpr6b))||...
                 ~isempty(regexpi(Notes{c},xpr11))|| strcmpi(Notes{c}(1:min([length(Notes{c}) 5])),xpr10)
         elseif ~isempty(regexpi(Notes{c},xpr1))
@@ -472,7 +474,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         stimHz = regexp(FileName,rxp2,'match');
         strFq = strcat(num2str(stimFq),'Hz');
         if stimFq>=1
-            if ~strcmp(stimHz,strFq) && ~strcmp(strFq,'0Hz')
+            if ~strcmp(stimHz{1},strFq) && ~strcmp(strFq,'0Hz')
                 FileName = char(strrep(FileName,stimHz,strFq));
             end
         end
@@ -492,7 +494,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         
         % Select only the stimulations
         if stimFq <= nHz && numel(stimTime) >= minStim && numel(numb) >= 1 ...
-                && ~strcmp(xsub2(1),'50Hz') 
+                && ~strcmp(xsub2(1),'50Hz') && endTime(KeepEvent(c)) > Time(KeepEvent(c))
             clear S
             S.Job   = 'Manual';
             S.Fname = fullfile(pth, matFile);
@@ -527,7 +529,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     end
             
     if stimFq <= nHz && numel(stimTime) >= minStim && numel(numb) >= 1 ...
-            && ~strcmp(xsub2(1),'50Hz') ...
+            && ~strcmp(xsub2(1),'50Hz') && endTime(KeepEvent(c)) > Time(KeepEvent(c))
             
         % Add events
         clear S2
@@ -586,10 +588,12 @@ f = {f.name};
 for k=1:numel(f)
     [~, matFileName, ~] = fileparts(f{k});
     nbrSc = strfind(matFileName,'_');
-    txtFileName = matFileName(1:nbrSc(end)-1);
-    if exist(fullfile(DirOut,strcat(txtFileName,'.txt')),'file')== 2
-        delete(fullfile(DirOut,strcat(txtFileName,'.txt')));
-    end  
+    if ~isempty(nbrSc)
+        txtFileName = matFileName(1:nbrSc(end)-1);
+        if exist(fullfile(DirOut,strcat(txtFileName,'.txt')),'file')== 2
+            delete(fullfile(DirOut,strcat(txtFileName,'.txt')));
+        end
+    end
 end
 nf = dir(fullfile(DirOut,'*0us.txt'));
 nf = {nf.name};
