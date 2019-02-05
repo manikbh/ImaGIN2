@@ -20,15 +20,17 @@ sFile = S.FileName;
 
 % Apply interpolation filter to remove artifact (unless disabled)
 if ~isfield(S, 'InterpolationFilter') || isempty(S.InterpolationFilter) || S.InterpolationFilter
-    clear S
-    S.Fname = sFile;
-    S.EventType = 'Stim';
-    %S.StartInterpolation= -0.015;
-    %S.EndInterpolation  = 0.015;
-    S.StartInterpolation = -0.008;
-    S.EndInterpolation   = 0.008;
-    D = ImaGIN_InterpolationFilter(S);
-    strInterp = 'i';
+    try
+        clear S
+        S.Fname = sFile;
+        S.EventType = 'Stim';
+        S.StartInterpolation = -0.008;
+        S.EndInterpolation   =  0.008;
+        D = ImaGIN_InterpolationFilter(S);
+        strInterp = 'i';
+    catch
+        strInterp = '';
+    end   
 else
     strInterp = '';
 end
