@@ -163,7 +163,7 @@ else
             if isempty(chInd2)
                 chInd2  = find(strcmp(chanLbs,ch2_2d));
             end
-            chInd = [chInd1;chInd2];
+            chInd = [chInd1(:);chInd2(:)];
             
             if ~isempty(chInd)
                 if isempty(find(any(bIdx==chInd(1)), 1))

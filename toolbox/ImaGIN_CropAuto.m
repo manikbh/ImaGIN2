@@ -350,6 +350,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     catch
         FullN = noteName;
         S.StimFreq = 1;
+        StimFreq = S.StimFreq;
     end
     
     noteName = strrep(FullN,'.',',');
@@ -473,7 +474,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         FileName = strcat(stimTimeOut,'_1.mat');
         stimHz = regexp(FileName,rxp2,'match');
         strFq = strcat(num2str(stimFq),'Hz');
-        if stimFq>=1
+        if stimFq>=1 && ~isempty(stimHz)
             if ~strcmp(stimHz{1},strFq) && ~strcmp(strFq,'0Hz')
                 FileName = char(strrep(FileName,stimHz,strFq));
             end

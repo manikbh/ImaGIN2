@@ -180,8 +180,12 @@ if mil_flag == 0
             fprintf('MESSAGE: Pulse duration found, but not in all Notes. Its unique value is %d \n', pval);
         else
             if ~isnan(pulseDefault)
-                fprintf('MESSAGE: Pulse duration not found in any of the Notes. Using default value = %d \n', pulseDefault);
-                pval = pulseDefault;
+                if pulseDefault == 0
+                    error('No pulse duration found in Notes and default value is zero!');
+                else
+                    fprintf('MESSAGE: Pulse duration not found in any of the Notes. Using default value = %d \n', pulseDefault);
+                    pval = pulseDefault; 
+                end
             end
         end
         

@@ -220,16 +220,10 @@ for i0 = 1:size(t,1)
     
     % Replace labels in D.channels
     for iChan = 1:length(SpmMat.D.channels)
-        % Replace "g,1", "g-1" and "g,2", "g-2" with "g1" and "g2"
-        if strcmpi(char(SpmMat.D.channels(iChan).label), 'g,1') 
-            SpmMat.D.channels(iChan).label = 'g1';
-        elseif strcmpi(char(SpmMat.D.channels(iChan).label), 'g,2') 
-            SpmMat.D.channels(iChan).label = 'g2';
-        elseif strcmpi(char(SpmMat.D.channels(iChan).label), 'g-1') 
-            SpmMat.D.channels(iChan).label = 'g1';  
-        elseif strcmpi(char(SpmMat.D.channels(iChan).label), 'g-2')
-            SpmMat.D.channels(iChan).label = 'g2';            
-        end 
+        spmLtmp = SpmMat.D.channels(iChan).label;
+        spmLtmp(ismember(double(spmLtmp),[',' ';' '-'])) ='';
+        SpmMat.D.channels(iChan).label = spmLtmp;
+        
         iChanMatch = find(strcmpi(SpmMat.D.channels(iChan).label, chMatchLog(:,1)));
         if (length(iChanMatch) == 1)
             SpmMat.D.channels(iChan).label = chMatchLog{iChanMatch,2};
