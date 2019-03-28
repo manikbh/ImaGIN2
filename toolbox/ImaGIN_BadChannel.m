@@ -61,12 +61,14 @@ idxNaN = find(isnan(pos(:,1)));
 % if badchanel file exists, "text file ending with _bIdx"
 % no computation is needed, load and put them in spm object.
 if exist(fullfile(badDir, [FileOut,'_bIdxChecked.txt']),'file') == 2 && strcmpi(toCheck,'OK')    
-    bIdx = load(fullfile(badDir, [FileOut,'_bIdx.txt']));   % txt file of indices computed by machine learning
+    bIdxAuto    = load(fullfile(badDir, [FileOut,'_bIdx.txt']));   % txt file of indices computed by machine learning
     bIdxChecked = load(fullfile(badDir, [FileOut,'_bIdxChecked.txt'])); % txt file of indices manually written during quality control
     if ~isempty(bIdxChecked)
-        bIdx = [bIdx(:);bIdxChecked(:)];
-        bIdx = sort(unique(bIdx));
+        bIdx = [bIdxChecked(:),idxNaN(:)];
+    else
+        bIdx = [bIdxAuto(:),idxNaN(:)];
     end
+    bIdx     = sort(unique(bIdx));
     interIdx = intersect(bIdx,idxNaN);
     NaNbIdx  = setdiff(bIdx,idxNaN);
     ixNaN    = setdiff(idxNaN, bIdx);

@@ -24,14 +24,16 @@ catch
     D=spm_eeg_load(FileIn);
 end
 [badDir,cutName,~] = fileparts(FileIn);
-
 bPrefix = strcat(badDir,'/',cutName); 
 
-try
-    bIdx = load(strcat(bPrefix,'_bIdx.txt'));
-catch exception
-    throw(exception)
+bIdxAuto    = load(strcat(bPrefix,'_bIdx.txt'));       % txt file of indices computed by machine learning
+bIdxChecked = load(strcat(bPrefix,'_bIdxChecked.txt')); % txt file of indices manually written during quality control
+if ~isempty(bIdxChecked)
+    bIdx = bIdxChecked(:);
+else
+    bIdx = bIdxAuto(:);
 end
+
 elec= sensors(D,'eeg');  % add channels without positions into bad channels
 pos = elec.elecpos; 
 Sens = elec.label;
@@ -50,15 +52,14 @@ csvfilename = strcat(bPrefix,'.csv');
 writetable(T,csvfilename,'Delimiter',',');
 
 badchaFile = fopen(strcat(bPrefix,'_bChans.txt'), 'w');
-bIdxFile   = fopen(strcat(bPrefix,'_bIdx.txt'), 'w');
+
 if ~isempty(bIdx)
     for i = 1:length(bIdx)
         fprintf(badchaFile, '%d %s\n', bIdx(i), char(chanLbs{bIdx(i)}));
-        fprintf(bIdxFile, '%d \n', bIdx(i));
     end    
 end
 fclose(badchaFile);
-fclose(bIdxFile);
+
 try
     monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', cutName, '.txt']), 'w'); % export monopolar recording channels
     for i = 1:length(Sens)
