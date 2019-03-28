@@ -50,13 +50,15 @@ csvfilename = strcat(bPrefix,'.csv');
 writetable(T,csvfilename,'Delimiter',',');
 
 badchaFile = fopen(strcat(bPrefix,'_bChans.txt'), 'w');
+bIdxFile   = fopen(strcat(bPrefix,'_bIdx.txt'), 'w');
 if ~isempty(bIdx)
     for i = 1:length(bIdx)
         fprintf(badchaFile, '%d %s\n', bIdx(i), char(chanLbs{bIdx(i)}));
+        fprintf(bIdxFile, '%d \n', bIdx(i));
     end    
 end
 fclose(badchaFile);
-
+fclose(bIdxFile);
 try
     monoRecordings = fopen(fullfile(badDir, ['recordings_monopolar_', cutName, '.txt']), 'w'); % export monopolar recording channels
     for i = 1:length(Sens)
