@@ -29,9 +29,8 @@ bPrefix = strcat(badDir,'/',cutName);
 
 try
     bIdx = load(strcat(bPrefix,'_bIdx.txt'));
-catch
-    disp('Bad channel indices was not loaded');
-    bIdx = [];
+catch exception
+    throw(exception)
 end
 elec= sensors(D,'eeg');  % add channels without positions into bad channels
 pos = elec.elecpos; 
@@ -68,8 +67,8 @@ try
         end
     end
     fclose(monoRecordings);
-catch
-    disp('Monopolar recordings file not saved.')
+catch exception 
+    throw(exception)
 end
 
 tmpIdx = D.badchannels; % old badchannels indices

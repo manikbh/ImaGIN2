@@ -218,8 +218,8 @@ try
         end
     end
     fclose(monoRecordings);
-catch
-    disp('Monopolar recordings file not saved.')
+catch exception 
+    throw(exception)
 end
 
 % Add badchannel index in meeg object
