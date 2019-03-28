@@ -64,9 +64,9 @@ if exist(fullfile(badDir, [FileOut,'_bIdxChecked.txt']),'file') == 2 && strcmpi(
     bIdxAuto    = load(fullfile(badDir, [FileOut,'_bIdx.txt']));   % txt file of indices computed by machine learning
     bIdxChecked = load(fullfile(badDir, [FileOut,'_bIdxChecked.txt'])); % txt file of indices manually written during quality control
     if ~isempty(bIdxChecked)
-        bIdx = [bIdxChecked(:),idxNaN(:)];
+        bIdx = [bIdxChecked(:);idxNaN(:)];
     else
-        bIdx = [bIdxAuto(:),idxNaN(:)];
+        bIdx = [bIdxAuto(:);idxNaN(:)];
     end
     bIdx     = sort(unique(bIdx));
     interIdx = intersect(bIdx,idxNaN);
