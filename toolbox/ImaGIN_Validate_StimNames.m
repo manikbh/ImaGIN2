@@ -136,7 +136,7 @@ if ~isempty(strfind(patientCode,'MIL'))
                 Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Pul];
             end
             Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},'_3_','_'));
-            evt(n).type = Notes{KeepEvent(n)};
+            evt(KeepEvent(n)).type = Notes{KeepEvent(n)};
         end
         D = events(D,1,evt);
         D2 = clone(D, D.fnamedat, [D.nchannels D.nsamples D.ntrials]);
@@ -205,7 +205,6 @@ if mil_flag == 0
                     Notes{KeepEvent(c)}=[Notes{KeepEvent(c)} '_' pval]; % add pulse duration
                 end
             end
-%             nevt = 1;
             for ii =1:evsize
                 Notes{ii} = strrep(Notes{ii},'MA','mA');
                 Notes{ii} = strrep(Notes{ii},'ma','mA');
@@ -218,15 +217,7 @@ if mil_flag == 0
                 Notes{ii} = strrep(Notes{ii},'_Hz','Hz');
                 Notes{ii} = strrep(Notes{ii},'Stim_Start_',''); Notes{ii} = strrep(Notes{ii},'_0us','');
                 evt(ii).type = Notes{ii};
-%                 if ~strcmpi(evt(ii).type,'RESET ON') || ~strcmpi(evt(ii).type,'RESET OFF')...
-%                         || isempty(strfind(evt(ii).type,'Stim_Stop_'))...
-%                         || isempty(strfind(evt(ii).type,'OFF'))
-%                     
-%                     newEvt(nevt) = evt(ii);
-%                     nevt = nevt+1;
-%                 end
             end
-%             D = events(D,1,newEvt);
             D = events(D,1,evt);
             D2 = clone(D, D.fnamedat, [D.nchannels D.nsamples D.ntrials]);
             D2(:,:,:) = D(:,:,:);
