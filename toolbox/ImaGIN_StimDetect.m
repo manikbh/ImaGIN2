@@ -104,6 +104,11 @@ for i1=1:size(Data,1)
     Data(i1,:)=ImaGIN_notch(Data(i1,:),D.fsample,50,250);
 end
 
+%Remove low frequency drift (below 3 Hz)
+for i1=1:size(Data,1)
+    Data(i1,:)=ImaGIN_bandpass(Data(i1,:),D.fsample,1,0.95*D.fsample/2);
+end
+
 
 %Simple version based on averaging between electrodes
 stimulation = [];
@@ -223,15 +228,18 @@ if 1==1
         for i1=1:size(Data2,1)
             Data2(i1,:)=tmps(i1)*Data2(i1,:);
         end
-        if 1==0
+        if 1==1
             %Same offset for all pulses
             TemplateData=0;
             for i1=1:length(stimulation)
-                TemplateData=TemplateData+mean(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]),1);
+%                 TemplateData=TemplateData+mean(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]),1);
+                TemplateData=TemplateData+mean(abs(hilbert(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]))),1);
+%                 TemplateData=TemplateData+mean(abs(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)])),1);
             end
             TimeTemplate=[-ceil(Stim/2):ceil(Stim/2)]./fsample(D);
             TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
-            tmpoffset=find(TemplateNorm>10&TimeTemplate>-0.02);
+%             tmpoffset=find(abs(hilbert(TemplateNorm))>10&TimeTemplate>-0.02);
+            tmpoffset=find(abs(TemplateNorm)>5&TimeTemplate>-0.02);
             if isempty(tmpoffset)
                 offset=0;
             else
@@ -245,16 +253,16 @@ if 1==1
             for i1=1:length(stimulation)
                 TemplateData=mean(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]),1);
                 TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
-                tmpoffset=find(TemplateNorm>5&TimeTemplate>-0.02);
+                tmpoffset=find(abs(hilbert(TemplateNorm))>5&TimeTemplate>-0.015);
                 if isempty(tmpoffset)
                     offset(i1)=0;
                 else
                     i2=min(tmpoffset);
                     offset(i1)=ceil(Stim/2)+1-i2;
                 end
-                if abs(offset(i1))>5
-                    offset(i1)=0;
-                end                    
+%                 if abs(offset(i1))>5
+%                     offset(i1)=0;
+%                 end                    
             end
         end
         
