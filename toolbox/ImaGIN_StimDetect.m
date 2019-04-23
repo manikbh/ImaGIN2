@@ -235,11 +235,12 @@ if 1==1
 %                 TemplateData=TemplateData+mean(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]),1);
                 TemplateData=TemplateData+mean(abs(hilbert(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]))),1);
 %                 TemplateData=TemplateData+mean(abs(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)])),1);
+%                 TemplateData=TemplateData+mean(ImaGIN_normalisation(abs(hilbert(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]))),2,find(TimeTemplate<-0.02&TimeTemplate>-0.1)),1);
             end
             TimeTemplate=[-ceil(Stim/2):ceil(Stim/2)]./fsample(D);
-            TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
+            TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.01&TimeTemplate>-0.1));
 %             tmpoffset=find(abs(hilbert(TemplateNorm))>10&TimeTemplate>-0.02);
-            tmpoffset=find(abs(TemplateNorm)>5&TimeTemplate>-0.02);
+            tmpoffset=find(abs(TemplateNorm)>8&TimeTemplate>-0.02);
             if isempty(tmpoffset)
                 offset=0;
             else
@@ -252,7 +253,7 @@ if 1==1
             offset=stimulation;
             for i1=1:length(stimulation)
                 TemplateData=mean(Data2(:,stimulation(i1)+[-ceil(Stim/2):ceil(Stim/2)]),1);
-                TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
+                TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.01&TimeTemplate>-0.1));
                 tmpoffset=find(abs(hilbert(TemplateNorm))>5&TimeTemplate>-0.015);
                 if isempty(tmpoffset)
                     offset(i1)=0;
