@@ -51,7 +51,11 @@ for i0=1:size(Filename,1)
     Name=Sensors.label;
     Position=Sensors.elecpos;
     BadChannelsMono=badchannels(D);
-    
+    idxNaN = find(isnan(Position(:,1)));
+    if ~isempty(idxNaN)
+        BadChannelsMono = [BadChannelsMono(:);idxNaN(:)];        
+    end
+    BadChannelsMono = sort(unique(BadChannelsMono));
     if isempty(bipole)
         Cpos2full=[];
         Cnamesfull={};

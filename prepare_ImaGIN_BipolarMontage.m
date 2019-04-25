@@ -8,9 +8,8 @@ S.FileOut=FileOut;
 
 if strcmp(Save,'False')
     Save=false;
-else if strcmp(Save,'True')
-        Save=true;
-    end
+elseif strcmp(Save,'True')
+    Save=true;
 end
 
 S.Save=Save;
