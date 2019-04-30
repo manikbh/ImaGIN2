@@ -25,7 +25,11 @@ else
 end
  
 if (nargin >= 1) && isfield(S, 'defaultPulseDuration') && ~isempty(S.defaultPulseDuration)
-    pulseDefault = str2double(S.defaultPulseDuration);
+    if ~isnumeric(S.defaultPulseDuration)
+        pulseDefault = str2double(S.defaultPulseDuration);
+    else
+        pulseDefault = S.defaultPulseDuration;
+    end
 else
    pulseDefault = NaN; 
 end
@@ -53,7 +57,11 @@ end
 KeepEvent=[];
 for c=1:evsize % Navigate all available events
     xpr1  = '\w*hz_\w*';
+    
     xpr2  = '\w*stim\w*';
+    xpr2b  = '\w*TextNote\w*';
+    xpr2c  = '\w*CONNECT TO\w*';
+    
     xpr3  = '\w*mA\w*';
     xpr4  = '\w*50.0hz\w*';
     xpr5  = '\w*50hz\w*';
@@ -78,6 +86,10 @@ for c=1:evsize % Navigate all available events
             KeepEvent=[KeepEvent c];
         elseif ~isempty(regexpi(Notes{c},xpr2))
             KeepEvent=[KeepEvent c];
+        elseif~isempty(regexpi(Notes{c},xpr2b))
+            KeepEvent=[KeepEvent c];
+         elseif~isempty(regexpi(Notes{c},xpr2c))
+            KeepEvent=[KeepEvent c];           
         elseif ~isempty(regexp(Notes{c},xpr3,'ONCE'))
             KeepEvent=[KeepEvent c];
         elseif ismember(lower(Notes{c}(1)),['a':'z']) && di(1)<=4 && ~strcmp(regexprep(Notes{c},' ',''),'SE1Hz') && ~strcmp(regexprep(Notes{c},' ',''),'SE50Hz')
@@ -94,7 +106,9 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_'); %some MIL notes
     noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',','');
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
-    noteName = strrep(noteName,'stim','');
+    noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim','');
+    noteName = strrep(noteName,'STIM',''); noteName = strrep(noteName,'TextNote_','');
+    noteName = strrep(noteName,'CONNECT_TO_',''); noteName = strrep(noteName,'_-_','-');
     Notes{KeepEvent(j)} = noteName;
 end
 
@@ -190,6 +204,8 @@ if mil_flag == 0
                     fprintf('MESSAGE: Pulse duration not found in any of the Notes. Using default value = %d \n', pulseDefault);
                     pval = pulseDefault; 
                 end
+            else
+                error('No pulse duration found in Notes and default value is NaN!');
             end
         end
         

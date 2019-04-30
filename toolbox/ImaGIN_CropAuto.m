@@ -581,6 +581,9 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         if exist(cropFileNameMat, 'file') == 2 && (isempty(iChanMatch1) || isempty(iChanMatch2))
             matDelCount =  matDelCount + 1;
             matDeleted(end+1) = {namePrefix};
+        elseif exist(cropFileNameMat, 'file') == 2 && (str2double(chInd2) ~= str2double(chInd1) + 1)
+            matDelCount =  matDelCount + 1;
+            matDeleted(end+1) = {namePrefix};
         end
     end    
 end
