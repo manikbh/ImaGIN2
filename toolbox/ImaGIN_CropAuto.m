@@ -138,7 +138,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='_';
     noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');
     noteName = strrep(noteName,'usec','us'); 
-    noteName = regexprep(noteName,'MA','mA'); %OD
+%     noteName = regexprep(noteName,'MA','mA'); %OD
     noteName = regexprep(noteName,'Stim_Start_',''); %YUQ & MIL notes
     noteName = regexprep(noteName,'Stim_Stop_','');  %YUQ notes    
     noteName = strrep(noteName,'-','_');  noteName = strrep(noteName,'__','_');    
@@ -313,7 +313,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         xsub0 = noteName(1:(di(1)+numel(ds{1})-1));
         rxp1  = '[-+]?(\d*[.])?\d+mA'; rxp2  = '[-+]?(\d*[.])?\d+Hz';
         rxp3  = '[-+]?(\d*[.])?\d+us'; rxp4  = '[-+]?(\d*[.])?\d+s';
-        xsub1 = regexp(noteName,rxp1,'match'); 
+        xsub1 = regexpi(noteName,rxp1,'match'); 
         if isempty(xsub1), xsub1 = '0mA'; 
             xsub1 = cellstr(xsub1);
         end
