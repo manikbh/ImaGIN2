@@ -101,14 +101,21 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(char(Notes{KeepEvent(j)}), ' ','_');
     noteName = regexprep(noteName,'�','u'); %OD
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='';
-    noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');
-    
+    noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');    
     noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_'); %some MIL notes
     noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',','');
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
     noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim','');
     noteName = strrep(noteName,'STIM',''); noteName = strrep(noteName,'TextNote_','');
-    noteName = strrep(noteName,'CONNECT_TO_',''); noteName = strrep(noteName,'_-_','-');
+    noteName = strrep(noteName,'CONNECT_TO_',''); noteName = strrep(noteName,'_-_','-');    
+    [numb,nIDX]= regexp(noteName,'\d*','Match');
+    if strcmpi(patientCode(5:end),'YUQ') && numel(numb) >= 3
+        if length(noteName) > nIDX(3)
+            noteName = strcat([noteName(1:nIDX(3)),'mA'],noteName(nIDX(3)+1:end));  
+        else
+            noteName = [noteName(1:nIDX(3)),'mA'];
+        end
+    end    
     Notes{KeepEvent(j)} = noteName;
 end
 
@@ -119,7 +126,7 @@ rxp3bis  = '[-+]?(\d*[.])?\d+�s';
 mil_flag = 0;
 % MIL patients have stims parameters in stim_parameters file saved on /02-raw
 % that could be loaded 
-if ~isempty(strfind(patientCode,'MIL'))
+if strcmpi(patientCode(5:end),'MIL')
     load('/gin/data/database/02-raw/stim_parameters-ftract-mil.mat','stim_params')
     Loc = find(ismember(stim_params.PCode, patientCode), 1);
     if ~isempty(Loc)
