@@ -133,20 +133,20 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     S.StimContinuous= 0;
     S.EvtName  = Notes{KeepEvent(c)};
     noteName = strrep(char(Notes{KeepEvent(c)}), ' ','_');
-    noteName = regexprep(noteName,'�sec','us');
-    noteName = regexprep(noteName,'�s','us');
+    noteName = strrep(noteName,'�sec','us');
+    noteName = strrep(noteName,'�s','us');
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='_';
-    noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');
+    noteName = strrep(noteName,'_+','_'); noteName = strrep(noteName,'µ','u');
     noteName = strrep(noteName,'usec','us'); 
-    noteName = regexprepi(noteName,'Stim_Start_',''); %YUQ & MIL notes
-    noteName = regexprepi(noteName,'Stim_Stop_','');  %YUQ notes    
-    noteName = strrep(noteName,'-','_');  noteName = strrep(noteName,'__','_');    
-    noteName = strrep(noteName,',','');noteName = strrep(noteName,'_mA_','_');
+    noteName = strrep(noteName,'Stim_Start_',''); %YUQ & MIL notes
+    noteName = strrep(noteName,'Stim_Stop_','');  %YUQ notes    
+    noteName = strrep(noteName,'-','_');     noteName = strrep(noteName,'__','_');    
+    noteName = strrep(noteName,',','');      noteName = strrep(noteName,'_mA_','_');
     noteName = strrep(noteName,'sec','us');  noteName = strrep(noteName,'_us','us');
-    noteName = strrep(noteName,'AA','A'); noteName = strrep(noteName,'_MA_','_'); %some MIL notes 
-    noteName = strrep(noteName,'stim','');  noteName = strrep(noteName,'Stim','');
+    noteName = strrep(noteName,'AA','A');    noteName = strrep(noteName,'_MA_','_'); %some MIL notes 
+    noteName = strrep(noteName,'stim','');   noteName = strrep(noteName,'Stim','');
     noteName = strrep(noteName,'TextNote:',''); % for BRN datasets 
-    noteName = regexprepi(noteName,'Stop',''); noteName = regexprepi(noteName,'Start','');
+    noteName = strrep(noteName,'Stop','');    noteName = strrep(noteName,'Start','');
     [numZ, numZI] = regexp(noteName,'\d*','Match');
     keepN = '';
     try
