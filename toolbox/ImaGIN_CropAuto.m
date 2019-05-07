@@ -138,18 +138,17 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='_';
     noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');
     noteName = strrep(noteName,'usec','us'); 
-%     noteName = regexprep(noteName,'MA','mA'); %OD
-    noteName = regexprep(noteName,'Stim_Start_',''); %YUQ & MIL notes
-    noteName = regexprep(noteName,'Stim_Stop_','');  %YUQ notes    
+    noteName = regexprepi(noteName,'Stim_Start_',''); %YUQ & MIL notes
+    noteName = regexprepi(noteName,'Stim_Stop_','');  %YUQ notes    
     noteName = strrep(noteName,'-','_');  noteName = strrep(noteName,'__','_');    
     noteName = strrep(noteName,',','');noteName = strrep(noteName,'_mA_','_');
     noteName = strrep(noteName,'sec','us');  noteName = strrep(noteName,'_us','us');
     noteName = strrep(noteName,'AA','A'); noteName = strrep(noteName,'_MA_','_'); %some MIL notes 
-    keepN = ''; noteName = strrep(noteName,'stim','');  noteName = strrep(noteName,'Stim','');
-    noteName = strrep(noteName,'TextNote:',''); % for BRN datasets
-    
+    noteName = strrep(noteName,'stim','');  noteName = strrep(noteName,'Stim','');
+    noteName = strrep(noteName,'TextNote:',''); % for BRN datasets 
+    noteName = regexprepi(noteName,'Stop',''); noteName = regexprepi(noteName,'Start','');
     [numZ, numZI] = regexp(noteName,'\d*','Match');
-    
+    keepN = '';
     try
         fundc = strfind(noteName,'_');
         lNumb = strfind(noteName,noteName(1:fundc(1)-1));

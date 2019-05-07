@@ -107,7 +107,8 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
     noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim','');
     noteName = strrep(noteName,'STIM',''); noteName = strrep(noteName,'TextNote_','');
-    noteName = strrep(noteName,'CONNECT_TO_',''); noteName = strrep(noteName,'_-_','-');    
+    noteName = strrep(noteName,'CONNECT_TO_',''); noteName = strrep(noteName,'_-_','-');   
+    noteName = strrep(noteName,'Start',''); noteName = strrep(noteName,'Stop','');
     [numb,nIDX]= regexp(noteName,'\d*','Match');
     if strcmpi(patientCode(5:end),'YUQ') && numel(numb) >= 3
         if length(noteName) > nIDX(3)
