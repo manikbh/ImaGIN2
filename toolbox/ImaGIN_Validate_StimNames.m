@@ -105,6 +105,7 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_'); %some MIL notes
     noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',','');
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
+    noteName = strrep(noteName,'Stim_Start_',''); noteName = strrep(noteName,'Stim_Stop_','');
     noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim','');
     noteName = strrep(noteName,'STIM',''); noteName = strrep(noteName,'TextNote_','');
     noteName = strrep(noteName,'CONNECT_TO_',''); noteName = strrep(noteName,'_-_','-');   
@@ -112,9 +113,9 @@ for j=1:length(KeepEvent) % Navigate all stim events
     [numb,nIDX]= regexp(noteName,'\d*','Match');
     if strcmpi(patientCode(5:end),'YUQ') && numel(numb) >= 3
         if length(noteName) > nIDX(3)
-            noteName = strcat([noteName(1:nIDX(3)),'mA'],noteName(nIDX(3)+1:end));  
+            noteName = strcat([noteName(1:nIDX(3)),'mA_1Hz'],noteName(nIDX(3)+1:end));  
         else
-            noteName = [noteName(1:nIDX(3)),'mA'];
+            noteName = [noteName(1:nIDX(3)),'mA_1Hz'];
         end
     end    
     Notes{KeepEvent(j)} = noteName;
@@ -239,7 +240,7 @@ if mil_flag == 0
                 Notes{ii} = strrep(Notes{ii},'1_HA','1Hz');
                 Notes{ii} = strrep(Notes{ii},'_mA','mA');
                 Notes{ii} = strrep(Notes{ii},'_Hz','Hz');
-                Notes{ii} = strrep(Notes{ii},'Stim_Start_',''); Notes{ii} = strrep(Notes{ii},'_0us','');
+                Notes{ii} = strrep(Notes{ii},'_0us','');
                 evt(ii).type = Notes{ii};
             end
             D = events(D,1,evt);

@@ -126,9 +126,19 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     S.Channels = [];
     S.StimStart= Time(1,KeepEvent(c))-0.5;
     if c < length(KeepEvent)
-        S.StimEnd  = min([Time(1,KeepEvent(c))+180 Time(1,KeepEvent(c+1))-0.5]);
+        thisEnd = min([Time(1,KeepEvent(c))+180 Time(1,KeepEvent(c+1))-0.5]);
+        if thisEnd <= totTime
+            S.StimEnd = thisEnd;
+        else
+            continue;
+        end
     else
-        S.StimEnd  = min([totTime Time(1,KeepEvent(c))+120]);
+        thisEnd = min([totTime Time(1,KeepEvent(c)) + 120]);
+        if thisEnd <= totTime && S.StimStart < thisEnd
+            S.StimEnd  = thisEnd;
+        else 
+            continue
+        end
     end
     S.StimContinuous= 0;
     S.EvtName  = Notes{KeepEvent(c)};
@@ -317,7 +327,8 @@ for c = 1:length(KeepEvent) % Navigate all stim events
             xsub1 = cellstr(xsub1);
         end
         xsub2 = regexp(noteName,rxp2,'match'); 
-        if isempty(xsub2), xsub2 = '0Hz';
+        if isempty(xsub2) || strcmp(xsub2,'0Hz')
+            xsub2 = '0Hz';
             xsub2 = cellstr(xsub2);
             S.StimFreq = 1;
             StimFreq = 1;
