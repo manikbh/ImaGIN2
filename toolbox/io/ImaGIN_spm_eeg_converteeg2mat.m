@@ -283,12 +283,10 @@ function D = ImaGIN_convert_brainstorm(InputFile, FileFormat, OutputFile, SelCha
         sFileInSpm.channelflag  = sFileIn.channelflag(iSel);
         % Remove all the events that are not in this segment
         if (nEpochs > 1)
-            sFileInSpm.prop.samples = sFileIn.epochs(iEpoch).samples;
             sFileInSpm.prop.times   = sFileIn.epochs(iEpoch).times;
             for iEvt = 1:length(sFileInSpm.events)
                 iEvtEpoch = find(sFileInSpm.events(iEvt).epochs == iEpoch);
                 sFileInSpm.events(iEvt).times   = sFileInSpm.events(iEvt).times(iEvtEpoch);
-                sFileInSpm.events(iEvt).samples = sFileInSpm.events(iEvt).samples(iEvtEpoch);
                 sFileInSpm.events(iEvt).epochs  = sFileInSpm.events(iEvt).epochs(iEvtEpoch);
             end
             sFileInSpm.epochs = [];
