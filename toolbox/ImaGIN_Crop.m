@@ -148,7 +148,9 @@ function ImaGIN_CropManual(D,t,S)
 
     Dnew(:, :, 1) = d;
     Dnew = events(Dnew, 1, select_events(Events,[Time(1)/D.fsample+timeonset(D)  Time(2)/D.fsample+timeonset(D)]));
-    Dnew = timeonset(Dnew, Time(1)./D.fsample+D.timeonset);
+%     Dnew = timeonset(Dnew, Time(1)./D.fsample+D.timeonset);
+    % first sample has relative time 0
+    Dnew = timeonset(Dnew, (Time(1)-1)./D.fsample+D.timeonset);
 
     save(Dnew);
 end

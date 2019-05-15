@@ -36,7 +36,16 @@ else
     thisN = '';
 end
 
+% method to be used in ImaGIN_StimDetect
+try
+    StimDetectVersion = S.StimDetectVersion ;
+catch
+    StimDetectVersion = 4 ;
+end
+
+
 D = spm_eeg_load(sFile); % Load the converted file .mat
+
 
 %% Find existing crop files in DirOut
 matExist = dir(fullfile(DirOut,'*.mat')); %Delete all cropped text file
@@ -77,6 +86,11 @@ for c=1:evsize % Navigate all available events
     xpr4b  = '\w*55.0hz\w*';
     xpr5b  = '\w*55hz\w*';
     xpr6b  = '\w*55 hz\w*';
+    % present in '/gin/data/database/02-raw/0007BUC/SEEG/StimLF_2013-11-13/Electrodes/electrodes_0007BUC_Raw_2.mat' ; 'P10-P11_2mA_1011Hz_3000us'
+    % while in fact, it is 1Hz
+    % and using 1011Hz makes a poor detection 
+    xpr6c  = '\w*1011Hz\w*'; 
+    
     
     xpr7  = '\w*alarme\w*';
     xpr8  = '\w*SE1Hz\w*';
@@ -95,6 +109,7 @@ for c=1:evsize % Navigate all available events
                 ~isempty(regexpi(Notes{c},xpr12)) || ~isempty(regexpi(Notes{c},xpr4b))|| ...
                 ~isempty(regexpi(Notes{c},xpr12b))|| ~isempty(regexpi(Notes{c},xpr13))|| ...
                 ~isempty(regexpi(Notes{c},xpr5b)) || ~isempty(regexpi(Notes{c},xpr6b))|| ...
+                ~isempty(regexpi(Notes{c},xpr6c)) || ...
                 ~isempty(regexpi(Notes{c},xpr11)) || strcmpi(Notes{c}(1:min([length(Notes{c}) 5])),xpr10)
         elseif ~isempty(regexpi(Notes{c},xpr1))
             KeepEvent=[KeepEvent c];
@@ -461,8 +476,11 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     % S.FindBadChannels=0;
     %}
     
-    [stimTime,~,~] = ImaGIN_StimDetect(S);
+    
     disp(KeepEvent(c)), disp(S.EvtName);
+    S.StimDetectVersion = StimDetectVersion ;
+    [stimTime,~,~] = ImaGIN_StimDetect(S);
+    
     stimFq = StimFreq;
     
     % if numel(stimTime) >= seuilHz         %OD

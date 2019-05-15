@@ -59,6 +59,12 @@ catch
     FileOut = [Filename(1:end-3) 'txt'];
 end
 
+try
+    StimDetectVersion=S.StimDetectVersion;
+catch
+    StimDetectVersion=4;
+end
+
 
 % D=timeonset(D,0);
 % save(D)
@@ -221,14 +227,226 @@ if 1==1
 
     end 
     
+    % remove outliers close to other stims
+    stimulation = removeOutliers( stimulation, Stim ) ;
+    
     if ~isempty(stimulation)
-        %try to correct onset inpired from Lena's method
+        
+        % alignment of templates
+        segmentHWidth       = ceil(Stim/2) ;
+        templateHWidth      = round( 0.01 * fsample(D) );
+        corrHWidth          = round( 0.02 * fsample(D) ) ;
+        do_plot             = false ;
+        iterMax             = 10 ; 
+        if segmentHWidth > templateHWidth % sometimes it happens to be not the case: 0007BUC/ElectrodeFile#2/S.EvtName = P10-P11_2mA_1011Hz_3000us
+            [ alignments, alignedStimulations ]   = ImaGIN_AlignSegmentsIter( d, stimulation, segmentHWidth, templateHWidth, corrHWidth, do_plot, iterMax ) ;
+            
+            if 0
+                [ pathstr, name ]   = fileparts(FileOut) ;
+                fname = fullfile( pathstr, 'templateAlignment', [ name '__templateAlignment.mat' ] ) ;
+                if ~exist( fileparts(fname), 'dir' ), mkdir( fileparts(fname) ) ; end
+                fprintf( 1, [ 'Save ' fname '\n' ] ) ;
+                save( fname, 'stimulation', 'alignments', 'alignedStimulations' ) ;
+            end
+            
+            % apply alignment only if convergence and max(abs(alignments)) < 10ms
+            for i=1:iterMax
+                % convergence
+                if isempty(find(alignments(:,i)~=0,1))
+                    % sanity check
+                    if ~isequal( alignedStimulations, stimulation+sum(alignments(:,1:i),2)' ), error( 'Inconsistent alignment' ) ; end
+                    % apply alignment if < 10ms
+                    if max(abs(alignedStimulations-stimulation))/fsample(D) < 10e-3
+                        stimulation = alignedStimulations ;
+                    end
+                    break
+                end
+            end
+        end
+        
+        
+        % try to correct onset inpired from Lena's method
         tmps=sign(mean(Data(:,stimulation),2));
         Data2=Data;
         for i1=1:size(Data2,1)
             Data2(i1,:)=tmps(i1)*Data2(i1,:);
         end
-        if 1==1
+        
+        TemplateSamples=-segmentHWidth:segmentHWidth ;
+        TimeTemplate=TemplateSamples./fsample(D);
+        avg_to_plot = 0 ;
+        for i1=1:length(stimulation)
+            avg_to_plot = avg_to_plot + Data(:,stimulation(i1)+TemplateSamples) ;
+        end
+        
+        %Same offset for all pulses
+%         StimDetectVersion = 1 ; % based on template of data + threshold from 10 to 5
+%         StimDetectVersion = 2 ; % based on template of acceleration d + threshold (perc of the max)
+%         StimDetectVersion = 3 ; % mixed method: accel used to detect the start of the stim and then data to detect the max (threshold from 10 to 4)
+%         StimDetectVersion = 4 ; % similar to 3 but offset is computed from data based on a percentage of the max
+        if StimDetectVersion == 1 
+            
+            TemplateData=0;
+            for i1=1:length(stimulation)
+                TemplateData=TemplateData+mean(abs(Data2(:,stimulation(i1)+TemplateSamples)),1);
+            end
+            TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
+            template_to_plot = TemplateNorm ;
+            
+            for th=10:-1:5
+                tmpoffset=find( abs(TemplateNorm)>th & abs(TimeTemplate)<0.02);
+                if ~isempty(tmpoffset)
+                    break
+                end
+            end
+            if isempty(tmpoffset)
+                offset=nan;
+            else
+                i1=min(tmpoffset);
+                offset=ceil(Stim/2)+1-i1; 
+            end
+            
+            
+        elseif StimDetectVersion == 2
+      
+            % use mean template from d instead of data
+            template = 0 ;
+            for s=1:length(stimulation)
+                template = template + d( stimulation(s) + (-segmentHWidth:segmentHWidth) ) ;
+            end
+            template_to_plot = template ;
+            
+            % use a percentage of the max as a threshold
+            % sometimes there are many peaks (biphasic, high fsample) and the first is not the biggest one
+            % so we prefer a low threshold on the max
+            th              = 0.3 ;
+            offsetMaxTime   = 0.03 ;
+            offsetMaxSample = round( offsetMaxTime * fsample(D) ) ;
+            segmentCenter   = segmentHWidth + 1 ;
+            [ templateMax, iMax ] = max( abs(template(segmentCenter+(-offsetMaxSample:offsetMaxSample))) ) ;
+            
+            tmpoffset       = find( template>th*templateMax & abs(TimeTemplate)<offsetMaxTime, 1 );
+            
+            if isempty(tmpoffset)
+                offset=nan;
+            else
+                i1=min(tmpoffset);
+                offset=segmentCenter-i1;
+            end
+            
+            
+        elseif StimDetectVersion == 3
+            
+            % offset is computed from the data
+            TemplateData=0;
+            for i1=1:length(stimulation)
+                TemplateData=TemplateData+mean(abs(Data2(:,stimulation(i1)+TemplateSamples)),1);
+            end
+            TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
+            
+            % try to detect stimulation start to refine detection
+            % use mean template from d instead of data
+            template = 0 ;
+            for s=1:length(stimulation)
+                template = template + d( stimulation(s) + TemplateSamples ) ;
+            end
+            % use a percentage of the max as a threshold
+            % sometimes there are many peaks (biphasic, high fsample) and the first is not the biggest one
+            % so we prefer a low threshold on the max
+            th                      = 30/100 ;
+            offsetMaxInterval       = [ -0.04 0.02 ];
+            offsetMaxIntervalSample = round( offsetMaxInterval * fsample(D) ) ;
+            segmentCenter           = segmentHWidth + 1 ;
+            [ templateMax, ~ ]      = max( abs(template(segmentCenter+(offsetMaxIntervalSample(1):offsetMaxIntervalSample(2)))) ) ;
+            
+            startoffset             = find( template>th*templateMax & TimeTemplate>offsetMaxInterval(1) & TimeTemplate<offsetMaxInterval(2), 1 );
+            
+            if isempty(startoffset)
+                
+                for th=10:-1:4
+                    tmpoffset=find( abs(TemplateNorm)>th & abs(TimeTemplate)<0.02);
+                    if ~isempty(tmpoffset)
+                        break
+                    end
+                end
+                
+            else
+                
+                startoffset=min(startoffset);
+                for th=10:-1:4
+                    tmpoffset=find( abs(TemplateNorm)>th & TimeTemplate>=TimeTemplate(startoffset+1) & TimeTemplate<=TimeTemplate(startoffset)+8e-3 );
+                    if ~isempty(tmpoffset)
+                        break
+                    end
+                end
+                if isempty(tmpoffset)
+                    % 4ms after startoffset (one sample at 256Hz)
+                    tmpoffset = startoffset + round( fsample(D)*4e-3 ) ;
+                end
+            end
+            
+            if isempty(tmpoffset)
+                offset=nan;
+            else
+                i1=min(tmpoffset);
+                offset=ceil(Stim/2)+1-i1;
+            end
+            
+            
+        elseif StimDetectVersion == 4
+            
+            % offset is computed from the data
+            TemplateData=0;
+            for i1=1:length(stimulation)
+                TemplateData=TemplateData+mean(abs(Data2(:,stimulation(i1)+TemplateSamples)),1);
+            end
+            TemplateNorm=ImaGIN_normalisation(TemplateData,2,find(TimeTemplate<-0.02&TimeTemplate>-0.1));
+            
+            % try to detect stimulation start to refine detection
+            % use mean template from d instead of data
+            template = 0 ;
+            for s=1:length(stimulation)
+                template = template + d( stimulation(s) + TemplateSamples ) ;
+            end
+            % use a percentage of the max as a threshold
+            % sometimes there are many peaks (biphasic, high fsample) and the first is not the biggest one
+            % so we prefer a low threshold on the max
+            th                      = 30/100 ;
+            offsetMaxInterval       = [ -0.04 0.02 ];
+            offsetMaxIntervalSample = round( offsetMaxInterval * fsample(D) ) ;
+            segmentCenter           = segmentHWidth + 1 ;
+            [ templateMax, ~ ]      = max( abs(template(segmentCenter+(offsetMaxIntervalSample(1):offsetMaxIntervalSample(2)))) ) ;
+            
+            startoffset             = find( template>th*templateMax & TimeTemplate>offsetMaxInterval(1) & TimeTemplate<offsetMaxInterval(2), 1 );
+            
+            if isempty(startoffset)
+                
+                for th=10:-1:4
+                    tmpoffset=find( abs(TemplateNorm)>th & abs(TimeTemplate)<0.02);
+                    if ~isempty(tmpoffset)
+                        break
+                    end
+                end
+                
+            else
+                
+                startoffset = min(startoffset);
+                % 6ms allow to move 2 samples away at 256 Hz
+                tmpMax   	= max( abs(TemplateNorm(startoffset:startoffset+round(fsample(D)*6e-3))) ) ;
+                thd         = 50/100 ;
+                tmpoffset   = find( abs(TemplateNorm)>thd*tmpMax & TimeTemplate>=TimeTemplate(startoffset) & TimeTemplate<=TimeTemplate(startoffset+round(fsample(D)*6e-3)) );
+                % we take the sample at the first third of the interval (usefull for bipolar stim at 4096Hz)
+                tmpoffset   = tmpoffset( floor((length(tmpoffset)-1)/3)+1 ) ;
+            end
+            
+            if isempty(tmpoffset)
+                offset=nan;
+            else
+                i1=min(tmpoffset);
+                offset=ceil(Stim/2)+1-i1;
+            end            
+            
+        elseif 1==1
             %Same offset for all pulses
             TemplateData=0;
             for i1=1:length(stimulation)
@@ -267,7 +485,66 @@ if 1==1
             end
         end
         
-        stimulation=stimulation-offset;
+        
+        % save and plot for comparison of methods
+        plot_and_save = false ;
+        if plot_and_save
+            if StimDetectVersion == 1 || StimDetectVersion == 2 || StimDetectVersion == 3 || StimDetectVersion == 4
+                
+                % save th and offset in txt file
+                [ pathstr, name ] = fileparts(FileOut) ;
+                fname = fullfile( pathstr, 'offset', [ name '_offset.txt' ] ) ;
+                if ~exist(fileparts(fname),'dir'), mkdir(fileparts(fname)); end
+                fprintf( 1, [ 'Save ' fname '\n' ] ) ;
+                fd = fopen( fname, 'w' ) ;
+                fprintf( fd, [ num2str(offset) ' ' num2str(offset/fsample(D)) '\n' ] ) ;
+                fprintf( fd, [ num2str(th) ] ) ;
+                fclose(fd);
+                
+                % plot offset
+                H = figure( 'Position', [189 118 560 700] ) ; %[30 183 560 700] ) ;
+                
+                subplot(3,1,1); hold on ;
+                plot( TimeTemplate, avg_to_plot ) ;
+                line( zeros(2,1), get(gca,'YLim')','Color','k','linewidth',2);
+                if ~isnan(offset)
+                    line([TimeTemplate(i1);TimeTemplate(i1)],get(gca,'YLim')','color','r','linewidth',2);
+                end
+                xlim( [ -.05 .05 ] ) ;
+                title( strrep( [ name ' - V' num2str(StimDetectVersion) ], '_', ' ' ) )
+                
+                subplot(3,1,2); hold on ;
+                plot( TimeTemplate, template,'Color','b','linewidth',3 ) ;
+                line( zeros(2,1), get(gca,'YLim')','Color','k','linewidth',2);
+                if ~isempty(startoffset)
+                    line([TimeTemplate(startoffset);TimeTemplate(startoffset)],get(gca,'YLim')','color','b','linewidth',2);
+                end
+                xlim( [ -.05 .05 ] ) ;
+                title( 'template accel' )
+                
+                subplot(3,1,3); hold on ;
+                plot( TimeTemplate, TemplateNorm,'Color','g','linewidth',3 ) ;
+                line( zeros(2,1), get(gca,'YLim')','Color','k','linewidth',2);
+                if ~isnan(offset)
+                    line([TimeTemplate(i1);TimeTemplate(i1)],get(gca,'YLim')','color','g','linewidth',2);
+                end
+                xlim( [ -.05 .05 ] ) ;
+                title( 'template data' )
+                
+                fname = fullfile( pathstr, 'offset', [ name '_offset.png' ] ) ;
+                fprintf( 1, [ 'Save ' fname '...' ] ) ;
+                saveas(H,fname);
+                fprintf( 1, [ 'done' '\n' ] ) ;
+
+                close(H);
+                
+            end
+        end
+        
+        
+        if ~isnan(offset)
+            stimulation=stimulation-offset;
+        end
     end
     
 else
@@ -391,20 +668,9 @@ else
 end
 
 
-
-
 %remove outliers close to other stims
-if length(stimulation)>1
-    remove=[];
-    for i1=1:length(stimulation)
-        difftmp=abs(stimulation-stimulation(i1));
-        if isempty(find(difftmp>0.95*Stim & difftmp<1.05*Stim))
-            remove=[remove i1];
-        end
-    end
-%     StimulationFreqU=D.fsample/median(diff(stimulation));   %uncorrected stim frequency
-    stimulation=stimulation(setdiff(1:length(stimulation),remove));
-end
+stimulation = removeOutliers( stimulation, Stim ) ;
+
 
 if isempty(stimulation)
     StimulationFreqU=[];
@@ -486,4 +752,22 @@ fclose(fid);
 % fprintf(fid,'%f\n',StimulationIndex);
 % fclose(fid);
 
+end
 
+
+%remove outliers close to other stims
+function stimulation = removeOutliers( stimulation, Stim )
+
+if length(stimulation)>1
+    remove=[];
+    for i1=1:length(stimulation)
+        difftmp=abs(stimulation-stimulation(i1));
+        if isempty(find(difftmp>0.95*Stim & difftmp<1.05*Stim,1))
+            remove=[remove i1];
+        end
+    end
+%     StimulationFreqU=D.fsample/median(diff(stimulation));   %uncorrected stim frequency
+    stimulation=stimulation(setdiff(1:length(stimulation),remove));
+end
+
+end
