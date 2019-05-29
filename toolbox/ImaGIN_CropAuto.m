@@ -65,7 +65,6 @@ for i = 1: evsize
     Notes{i}  = evt(i).type;
     Time(1,i) = evt(i).time;
 end
-%%
 nHz  = 5;  % Accepted stim frequency
 minStim = 3; 
 bgnTime = zeros(1,evsize); % Beginning of event
@@ -89,9 +88,7 @@ for c=1:evsize % Navigate all available events
     % present in '/gin/data/database/02-raw/0007BUC/SEEG/StimLF_2013-11-13/Electrodes/electrodes_0007BUC_Raw_2.mat' ; 'P10-P11_2mA_1011Hz_3000us'
     % while in fact, it is 1Hz
     % and using 1011Hz makes a poor detection 
-    xpr6c  = '\w*1011Hz\w*'; 
-    
-    
+    xpr7a =  '\w*Yf\w*';
     xpr7  = '\w*alarme\w*';
     xpr8  = '\w*SE1Hz\w*';
     xpr9  = '\w*SE 1Hz\w*';
@@ -104,12 +101,11 @@ for c=1:evsize % Navigate all available events
     [ds,di]=regexp(Notes{c},'\d*','Match');
     if ~isempty(di)
         if ~isempty(regexpi(Notes{c},xpr4))       || ~isempty(regexpi(Notes{c},xpr5)) || ...
-                ~isempty(regexpi(Notes{c},xpr6))  || ~isempty(regexpi(Notes{c},xpr7)) || ...
+                ~isempty(regexpi(Notes{c},xpr6))  || ~isempty(regexpi(Notes{c},xpr7)) || ~isempty(regexpi(Notes{c},xpr7a)) ||...
                 ~isempty(regexpi(Notes{c},xpr8))  || ~isempty(regexpi(Notes{c},xpr9)) || ...
                 ~isempty(regexpi(Notes{c},xpr12)) || ~isempty(regexpi(Notes{c},xpr4b))|| ...
                 ~isempty(regexpi(Notes{c},xpr12b))|| ~isempty(regexpi(Notes{c},xpr13))|| ...
                 ~isempty(regexpi(Notes{c},xpr5b)) || ~isempty(regexpi(Notes{c},xpr6b))|| ...
-                ~isempty(regexpi(Notes{c},xpr6c)) || ...
                 ~isempty(regexpi(Notes{c},xpr11)) || strcmpi(Notes{c}(1:min([length(Notes{c}) 5])),xpr10)
         elseif ~isempty(regexpi(Notes{c},xpr1))
             KeepEvent=[KeepEvent c];
@@ -172,6 +168,8 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'stim','');   noteName = strrep(noteName,'Stim','');
     noteName = strrep(noteName,'TextNote:',''); % for BRN datasets 
     noteName = strrep(noteName,'Stop','');    noteName = strrep(noteName,'Start','');
+    noteName = strrep(noteName,'1011Hz','1Hz'); noteName = strrep(noteName,'uus','us');
+    noteName = strrep(noteName,'Impulsions_biphasiques',''); noteName = strrep(noteName,'CDuruue','');
     [numZ, numZI] = regexp(noteName,'\d*','Match');
     keepN = '';
     try
