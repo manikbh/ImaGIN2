@@ -414,6 +414,9 @@ if 1==1
             th                      = 30/100 ;
             offsetMaxInterval       = [ -0.04 0.02 ];
             offsetMaxIntervalSample = round( offsetMaxInterval * fsample(D) ) ;
+            % [ -0.04 0.02 ] is adapted only for 1Hz stimulation, not for 50Hz
+            % so we restrict the interval to avoid errors occuring in case offsetMaxInterval is larger than TemplateSamples
+            offsetMaxIntervalSample = [ max(offsetMaxIntervalSample(1),TemplateSamples(1)) min(offsetMaxIntervalSample(2),TemplateSamples(end)) ];
             segmentCenter           = segmentHWidth + 1 ;
             [ templateMax, ~ ]      = max( abs(template(segmentCenter+(offsetMaxIntervalSample(1):offsetMaxIntervalSample(2)))) ) ;
             
@@ -432,9 +435,12 @@ if 1==1
                 
                 startoffset = min(startoffset);
                 % 6ms allow to move 2 samples away at 256 Hz
-                tmpMax   	= max( abs(TemplateNorm(startoffset:startoffset+round(fsample(D)*6e-3))) ) ;
+                % when the Note is bizarre, the Stim frequency is not accurate and TemplateSamples is not well defined (only a few samples) 
+                % so we need to guarantee that startoffset + 6ms do not fall outside TemplateSamples range
+                tmpEndSamp  = min(startoffset+round(fsample(D)*6e-3),length(TemplateNorm)) ;
+                tmpMax   	= max( abs(TemplateNorm(startoffset:tmpEndSamp)) ) ;
                 thd         = 50/100 ;
-                tmpoffset   = find( abs(TemplateNorm)>thd*tmpMax & TimeTemplate>=TimeTemplate(startoffset) & TimeTemplate<=TimeTemplate(startoffset+round(fsample(D)*6e-3)) );
+                tmpoffset   = find( abs(TemplateNorm)>thd*tmpMax & TimeTemplate>=TimeTemplate(startoffset) & TimeTemplate<=TimeTemplate(tmpEndSamp) );
                 % we take the sample at the first third of the interval (usefull for bipolar stim at 4096Hz)
                 tmpoffset   = tmpoffset( floor((length(tmpoffset)-1)/3)+1 ) ;
             end
