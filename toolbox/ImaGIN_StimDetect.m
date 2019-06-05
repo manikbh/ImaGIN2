@@ -206,7 +206,9 @@ if 1==1
         Index=stimulation;
         Template=0;
         for i1=1:length(Index)
-            Template=Template+d(Index(i1)+[-ceil(Stim/2):ceil(Stim/2)]);
+            if Index(i1)-ceil(Stim/2) >= 1 && Index(i1)+ceil(Stim/2) <= length(d)
+                Template=Template+d(Index(i1)+[-ceil(Stim/2):ceil(Stim/2)]);
+            end
         end
         Index=find(d>2);
         Index=Index(find(Index>ceil(Stim/2)+1&Index<length(d)-ceil(Stim/2)-1));
