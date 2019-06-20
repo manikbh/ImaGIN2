@@ -4,12 +4,14 @@ if size(d,1) ~= 1
     error( 'Invalid d' )
 end
 
+fprintf( 1, [ 'alignSegments... ' ] ) ;
+
 alignments          = nan( length(stimulations), iterMax ) ;
 alignedStimulations = stimulations ;
 segments            = nan( length(alignedStimulations), 2*segmentHWidth+1 ) ;
 for i=1:iterMax
 
-    fprintf( 1, [ 'alignSegments iter ' num2str(i) '...' '\n' ] ) ;
+%     fprintf( 1, [ 'alignSegments iter ' num2str(i) '...' '\n' ] ) ;
     
     for s=1:length(alignedStimulations)
         segments(s,:)   = d( alignedStimulations(s) + (-segmentHWidth:segmentHWidth) ) ;
@@ -22,6 +24,13 @@ for i=1:iterMax
 %         fprintf( 1, [ 'alignSegments iter ' num2str(i) ' => BREAK' '\n' ] ) ;
         break
     else
+        % it happens that aligned segment fall outside full range
+        % in this case, the segment is not aligned
+        for s=1:length(alignedStimulations)
+            if alignedStimulations(s)+alignment(s)+segmentHWidth > length(d)
+                alignment(s) = 0 ;
+            end
+        end
         alignedStimulations  = alignedStimulations + alignment' ;
     end
     
@@ -31,6 +40,8 @@ for i=1:iterMax
 %     end
     
 end
+
+fprintf( 1, [ '(' num2str(i) ' iterations)' '\n' ] ) ;
 
 end
 
