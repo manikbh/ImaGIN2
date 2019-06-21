@@ -3,7 +3,7 @@ function newLabels = ImaGIN_channels_standard(allLabels, caseType, montageType)
     % Channel labels standardization: 'i''2i''1' becomes Ip02-Ip01
     if nargin < 3 || isempty(caseType), caseType = 'all_upper'; end    
     newLabels = {};        
-    for i = 1: size(allLabels,1)
+    for i = 1: length(allLabels)
         Label = allLabels{i};
         % Remove spaces
         Label(Label == ' ') = [];
@@ -33,17 +33,17 @@ function newLabels = ImaGIN_channels_standard(allLabels, caseType, montageType)
                 if str2double(numb{1}) + 1 == str2double(numb{2})
                     chInd1 =  numb{1};
                     if numel(chInd1) == 1
-                        chInd1 = ['0'  chInd1];
+                        chInd1 = ['0' chInd1];
                     end
                     chInd2 =  numb{2};
                     if numel(chInd2) == 1
-                        chInd2 = ['0'  chInd2];
+                        chInd2 = ['0' chInd2];
                     end
                     newLabel = strcat(Label(1:idx(1)-1), chInd1, '-', Label(1:idx(1)-1), chInd2);
                 elseif str2double(numb{1}) == str2double(numb{2}) + 1
                     chInd1 =  numb{2};
                     if numel(chInd1) == 1
-                        chInd1 = ['0'  chInd1];
+                        chInd1 = ['0' chInd1];
                     end
                     chInd2 =  numb{1};
                     if numel(chInd2) == 1
@@ -51,6 +51,28 @@ function newLabels = ImaGIN_channels_standard(allLabels, caseType, montageType)
                     end
                     newLabel = strcat(Label(1:idx(1)-1), chInd1, '-', Label(1:idx(1)-1), chInd2);
                 end
+            elseif numel(numb) == 4 && strcmp(chInd, numb{4})
+                if str2double(numb{2}) + 1 == str2double(numb{4})
+                    chInd1 =  numb{2};
+                    if numel(chInd1) == 1
+                         chInd1 = ['0' chInd1];
+                    end
+                    chInd2 =  numb{4};
+                    if numel(chInd2) == 1
+                        chInd2 = ['0' chInd2];
+                    end
+                    newLabel = strcat(Label(1:idx(2)-1), chInd1, '-', Label(1:idx(2)-1), chInd2);
+                elseif str2double(numb{2}) == str2double(numb{4}) + 1
+                    chInd1 =  numb{4};
+                    if numel(chInd1) == 1
+                        chInd1 = ['0' chInd1];
+                    end
+                    chInd2 =  numb{2};
+                    if numel(chInd2) == 1
+                        chInd2 = ['0' chInd2];
+                    end
+                    newLabel = strcat(Label(1:idx(2)-1), chInd1, '-', Label(1:idx(2)-1), chInd2);
+                end 
             end            
         elseif strcmpi(montageType,'monopolar')
             if numel(chInd) == 1
