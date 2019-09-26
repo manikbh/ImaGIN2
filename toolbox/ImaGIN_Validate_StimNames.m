@@ -176,8 +176,7 @@ if strcmpi(patientCode(5:end),'MIL')
 end
 fre_flag = 0;
 if strcmpi(patientCode(5:end),'FRE')
-    %load('/gin/data/database/02-raw/stim_parameters-ftract-fre.mat','stim_params')
-    load('/home/viateur/Desktop/F-TRACT/Datasets/GIN-serv/FRE/stim_parameters-ftract-fre.mat','stim_params')
+    load('/gin/data/database/02-raw/stim_parameters-ftract-fre.mat','stim_params')
     Loc = find(ismember(stim_params.PCode, patientCode), 1);
     if ~isempty(Loc)
         fre_flag = 1;
