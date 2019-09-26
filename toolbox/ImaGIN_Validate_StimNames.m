@@ -171,7 +171,7 @@ if strcmpi(patientCode(5:end),'MIL')
         D2(:,:,:) = D(:,:,:);
         save(D2);
         fprintf('\n \n MESSAGE: .. %s parameters updated ..::\n',patientCode); 
-        set_final_status('OK') 
+        %set_final_status('OK') 
     end
 end
 fre_flag = 0;
@@ -196,7 +196,6 @@ if strcmpi(patientCode(5:end),'FRE')
         D2(:,:,:) = D(:,:,:);
         save(D2);
         fprintf('\n \n MESSAGE: .. %s parameters updated ..::\n',patientCode); 
-        set_final_status('OK') 
     end
 end
 
