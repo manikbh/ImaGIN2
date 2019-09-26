@@ -46,6 +46,7 @@ try
 catch
     error('File %s NOT loaded \n', sFile);
 end
+%%
 evt = events(D);
 evsize = size(evt,2);        % Number of events
 Notes  = cell(1,evsize);     % Events labels
@@ -53,6 +54,7 @@ Notes  = cell(1,evsize);     % Events labels
 for i = 1: evsize
     Notes{i}= char(evt(i).type);
 end
+%%
 % Read notes to keep only those related to a stimulation
 KeepEvent=[];
 for c=1:evsize % Navigate all available events
@@ -172,7 +174,34 @@ if strcmpi(patientCode(5:end),'MIL')
         set_final_status('OK') 
     end
 end
-if mil_flag == 0
+fre_flag = 0;
+if strcmpi(patientCode(5:end),'FRE')
+    %load('/gin/data/database/02-raw/stim_parameters-ftract-fre.mat','stim_params')
+    load('/home/viateur/Desktop/F-TRACT/Datasets/GIN-serv/FRE/stim_parameters-ftract-fre.mat','stim_params')
+    Loc = find(ismember(stim_params.PCode, patientCode), 1);
+    if ~isempty(Loc)
+        fre_flag = 1;
+        Frq = stim_params.Freq{Loc};
+        Amp = stim_params.Ampl{Loc};
+        Pul = stim_params.Pulse{Loc};
+        for n = 1:length(KeepEvent)
+            undsc = strfind(Notes{KeepEvent(n)},'_');         
+            if ~isempty(undsc) 
+                Notes{KeepEvent(n)} = strcat(Notes{KeepEvent(n)}(1:undsc(1)),Amp,'_',Frq,'_',Pul);
+            end
+            Notes{KeepEvent(n)} = char(Notes{KeepEvent(n)});
+            evt(KeepEvent(n)).type = Notes{KeepEvent(n)};
+        end
+        D = events(D,1,evt);
+        D2 = clone(D, D.fnamedat, [D.nchannels D.nsamples D.ntrials]);
+        D2(:,:,:) = D(:,:,:);
+        save(D2);
+        fprintf('\n \n MESSAGE: .. %s parameters updated ..::\n',patientCode); 
+        set_final_status('OK') 
+    end
+end
+
+if mil_flag == 0 || fre_flag == 0
     pVals = [];
     for k = 1:length(KeepEvent)
         xsub3 = regexp(Notes{KeepEvent(k)},rxp3,'match');
