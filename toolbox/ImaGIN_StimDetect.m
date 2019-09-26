@@ -235,12 +235,16 @@ if 1==1
     if ~isempty(stimulation)
         
         % alignment of templates
-        segmentHWidth       = ceil(Stim/2) ;
+        % 95% of segmentHWidth is enough for alignment (100% may fail when for instance, segmentHWidth = 500, first stimulation is at sample 502 and alignment is found to be -2)
+        % and same pb also happens for offset correction
+        % segmentHWidth       = ceil(Stim/2) ;
+        segmentHWidth       = round( 0.95 * Stim/2 ) ;
         templateHWidth      = round( 0.01 * fsample(D) );
         corrHWidth          = round( 0.02 * fsample(D) ) ;
         do_plot             = false ;
         iterMax             = 10 ; 
         if segmentHWidth > templateHWidth % sometimes it happens to be not the case: 0007BUC/ElectrodeFile#2/S.EvtName = P10-P11_2mA_1011Hz_3000us
+            
             [ alignments, alignedStimulations ]   = ImaGIN_AlignSegmentsIter( d, stimulation, segmentHWidth, templateHWidth, corrHWidth, do_plot, iterMax ) ;
             
             if 0
