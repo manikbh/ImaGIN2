@@ -230,8 +230,12 @@ if 1==1
     end 
     
     % remove outliers close to other stims
-    stimulation = removeOutliers( stimulation, Stim ) ;
-    
+%     stimulation = removeOutliers( stimulation, Stim ) ;
+    if StimContinuous
+            Stim=median(diff(stimulation)); %estimate actual stimulation frequency
+            stimulation = removeOutliers( stimulation, Stim ) ;
+    end
+       
     if ~isempty(stimulation)
         
         % alignment of templates
