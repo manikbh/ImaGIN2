@@ -232,11 +232,11 @@ if 1==1
     % remove outliers close to other stims
 %     stimulation = removeOutliers( stimulation, Stim ) ;
 %     if StimContinuous
-            if length(stimulation)>1
-                Stim=median(diff(stimulation)); %estimate actual stimulation frequency
-            end
+%             if length(stimulation)>1
+%                 Stim=median(diff(stimulation)); %estimate actual stimulation frequency
+%             end
             stimulation = removeOutliers( stimulation, Stim ) ;
-            stimulation = stimulation(find(stimulation>round( 0.95 * Stim/2 )&&stimulation+round( 0.95 * Stim/2 )<=length(d)))
+            stimulation = stimulation(find(stimulation>round( 0.95 * Stim/2 )&stimulation+round( 0.95 * Stim/2 )<=length(d)))
 %     end
        
     if ~isempty(stimulation)
@@ -781,7 +781,7 @@ if length(stimulation)>1
     remove=[];
     for i1=1:length(stimulation)
         difftmp=abs(stimulation-stimulation(i1));
-        if isempty(find(difftmp>0.95*Stim & difftmp<1.05*Stim,1))
+        if isempty(find(difftmp>0.9*Stim & difftmp<1.1*Stim,1))
             remove=[remove i1];
         end
     end

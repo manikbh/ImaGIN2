@@ -120,6 +120,15 @@ for c=1:evsize % Navigate all available events
 end
 
 
+% Clean KeepEvent (in case a note was written for every pulse, we keep only the first of the series)
+IndexToRemove=[];
+for i1=1:length(KeepEvent)-1
+    if strcmp(Notes(KeepEvent(i1)),Notes(KeepEvent(i1+1)))
+        IndexToRemove=[IndexToRemove i1+1];
+    end
+end
+KeepEvent=KeepEvent(setdiff(1:length(KeepEvent),IndexToRemove));
+
 %% ------------------------------------------------
 % Case only specific stim events are to be cropped
 if ~isempty(thisN)
