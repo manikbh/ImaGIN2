@@ -135,7 +135,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     clear S
     S.Fname = fullfile(pth, matFile);
     S.Channels = [];
-    S.StimStart= Time(1,KeepEvent(c))-0.5;
+    S.StimStart= Time(1,KeepEvent(c))-2;
     if c < length(KeepEvent)
         thisEnd = min([Time(1,KeepEvent(c))+180 Time(1,KeepEvent(c+1))-0.5]);
         if thisEnd <= totTime
