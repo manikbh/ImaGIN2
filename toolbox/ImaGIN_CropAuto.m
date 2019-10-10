@@ -77,6 +77,7 @@ for c=1:evsize % Navigate all available events
     
     xpr1  = '\w*hz_\w*';
     xpr2  = '\w*stim\w*';
+    xpr2b  = '\w*CONNECT TO:\w*';
     xpr3  = '\w*mA\w*';
     xpr4  = '\w*50.0hz\w*';
     xpr5  = '\w*50hz\w*';
@@ -110,6 +111,8 @@ for c=1:evsize % Navigate all available events
         elseif ~isempty(regexpi(Notes{c},xpr1))
             KeepEvent=[KeepEvent c];
         elseif ~isempty(regexpi(Notes{c},xpr2))
+            KeepEvent=[KeepEvent c];
+        elseif ~isempty(regexpi(Notes{c},xpr2b))
             KeepEvent=[KeepEvent c];
         elseif ~isempty(regexp(Notes{c},xpr3,'ONCE'))
             KeepEvent=[KeepEvent c];
@@ -161,11 +164,12 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'usec','us'); 
     noteName = strrep(noteName,'Stim_Start_',''); %YUQ & MIL notes
     noteName = strrep(noteName,'Stim_Stop_','');  %YUQ notes    
-    noteName = strrep(noteName,'-','_');     noteName = strrep(noteName,'__','_');    
-    noteName = strrep(noteName,',','');      noteName = strrep(noteName,'_mA_','_');
-    noteName = strrep(noteName,'sec','us');  noteName = strrep(noteName,'_us','us');
-    noteName = strrep(noteName,'AA','A');    noteName = strrep(noteName,'_MA_','_'); %some MIL notes 
-    noteName = strrep(noteName,'stim','');   noteName = strrep(noteName,'Stim','');
+    noteName = strrep(noteName,'-','_'); noteName = strrep(noteName,'__','_');    
+    noteName = strrep(noteName,',',''); noteName = strrep(noteName,'_mA_','_');
+    noteName = strrep(noteName,'sec','us'); noteName = strrep(noteName,'_us','us');
+    noteName = strrep(noteName,'AA','A'); noteName = strrep(noteName,'_MA_','_'); %some MIL notes 
+    noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim',''); 
+    noteName = strrep(noteName,'CONNECT TO:',''); noteName = strtrim(noteName); % for MNI notes
     noteName = strrep(noteName,'TextNote:',''); % for BRN datasets 
     noteName = strrep(noteName,'Stop','');    noteName = strrep(noteName,'Start','');
     noteName = strrep(noteName,'1011Hz','1Hz'); noteName = strrep(noteName,'uus','us');

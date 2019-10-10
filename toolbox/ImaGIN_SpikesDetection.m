@@ -28,6 +28,7 @@ for c=1:evsize % Navigate all available events
     
     xpr1  = '\w*hz_\w*';
     xpr2  = '\w*stim\w*';
+    xpr2b  = '\w*CONNECT TO:\w*';
     xpr3  = '\w*mA\w*';
     xpr4  = '\w*50.0hz\w*';
     xpr5  = '\w*50hz\w*';
@@ -56,6 +57,8 @@ for c=1:evsize % Navigate all available events
             KeepEvent=[KeepEvent c];
         elseif ~isempty(regexpi(Notes{c},xpr2))
             KeepEvent=[KeepEvent c];
+        elseif ~isempty(regexpi(Notes{c},xpr2b))
+            KeepEvent=[KeepEvent c];    
         elseif ~isempty(regexp(Notes{c},xpr3,'ONCE'))
             KeepEvent=[KeepEvent c];
         elseif ismember(lower(Notes{c}(1)),['a':'z']) && di(1)<=4 && ~strcmp(regexprep(Notes{c},' ',''),'SE1Hz') && ~strcmp(regexprep(Notes{c},' ',''),'SE50Hz')
