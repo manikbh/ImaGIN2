@@ -3,7 +3,7 @@ function prepare_ImaGIN_BadChannelQualityControl(FileIn)
 clear S;
 S.dataset = fullfile(FileIn); 
 D = ImaGIN_BadChannelQualityControl(S);
-
+set_final_status('OK')
 close all
 
 end
