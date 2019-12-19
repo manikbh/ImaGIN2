@@ -15,6 +15,12 @@ function D = ImaGIN_CropAuto(S)
 %
 % Authors: Viateur Tuyisenge & Olivier David
 
+
+% This function does not use separate csv and will delete stimulations done on
+% electrodes (series of contacts) not recorded at all. Ideally, a csv with
+% all existing contacts should be provided as input. Note by O. David on
+% 19/12/19.
+
 if (nargin >= 1) && isfield(S, 'dataset') && ~isempty(S.dataset)
     sFile = S.dataset;
 else
@@ -55,6 +61,16 @@ matDeleted = {};
 %%
 evt = events(D);
 chanLabels = chanlabels(D);
+%Read electrode names
+ElectrodeNames={};
+for i1=1:numel(chanLabels)
+    Label=chanLabels{i1};
+    iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
+
+    ElectrodeNames{i1}=Label(1:iLastLetter);
+end
+ElectrodeNames=setdiff(unique(ElectrodeNames),'ecg');
+
 evsize = size(evt,2);        % Number of events
 Notes  = cell(1,evsize);     % Events labels
 Time   = zeros(1,evsize);
@@ -423,7 +439,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         iLastLetter = '';
     end
     if ~isempty(iLastLetter) && length(Label) >= iLastLetter
-        chLabel =  Label(1:iLastLetter);
+        chLabel =  upper(Label(1:iLastLetter));
         chInd   =  Label(iLastLetter+1:end);
     else
         chLabel = '';
@@ -466,14 +482,17 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     iChanMatch1 = find(strcmpi(chLabel1, chanLabels));
     iChanMatch2 = find(strcmpi(chLabel2, chanLabels));
     
-    if isempty(iChanMatch1) && ~isempty(chInd1)
-        tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
-        iChanMatch1 = find(strcmpi(tmpchLabel1, chanLabels));
-    end
-    if isempty(iChanMatch2) && ~isempty(chInd2)
-        tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
-        iChanMatch2 = find(strcmpi(tmpchLabel2, chanLabels));
-    end
+%     if isempty(iChanMatch1) && ~isempty(chInd1)
+%         tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
+%         iChanMatch1 = find(strcmpi(tmpchLabel1, chanLabels));
+%     end
+%     if isempty(iChanMatch2) && ~isempty(chInd2)
+%         tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
+%         iChanMatch2 = find(strcmpi(tmpchLabel2, chanLabels));
+%     end
+
+    iChanMatch1 = find(strcmpi(chLabel1(1:find(~ismember(chLabel1, '0123456789'), 1, 'last')), ElectrodeNames));
+    iChanMatch2 = find(strcmpi(chLabel2(1:find(~ismember(chLabel2, '0123456789'), 1, 'last')), ElectrodeNames));
     
     %{  
     %% uncomment this section for some datasets
