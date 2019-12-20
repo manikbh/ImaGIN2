@@ -20,7 +20,7 @@ if (nargin < 3) || isempty(trainedFile)
     trainedFile = '/gin/data/database/02-raw/ImaGIN_trainedClassifier.mat';
 end
 if (nargin < 2) || isempty(trainBaseFile)
-    trainBaseFile = '/gin/data/database/02-raw/trainBaseFeatures.mat';
+    trainBaseFile = '/gin/data/database/02-raw/ImaGIN_trainBaseFeatures.mat';
 end
 
 % Read existing train base
