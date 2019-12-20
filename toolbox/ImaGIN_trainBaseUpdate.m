@@ -32,6 +32,7 @@ else
 end
 
 % Go to bad channel directory with csv files (features)
+disp(badDir)
 cd(badDir);   
 % List csv files
 csvTables = dir('*.csv');
