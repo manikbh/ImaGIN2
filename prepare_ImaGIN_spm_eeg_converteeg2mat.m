@@ -8,8 +8,7 @@ S.FileOut=FileOut;
 S.SelectChannels=[];
 S.isSEEG=1;
 
-switch lower(ext)
-    
+switch lower(ext)    
     case '.trc'
         S.dataset=fullfile(FileIn);
         S.Atlas='Human';
