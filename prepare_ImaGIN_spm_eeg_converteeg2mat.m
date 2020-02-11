@@ -2,7 +2,6 @@ function prepare_ImaGIN_spm_eeg_converteeg2mat(FileIn, FileOut)
 
 % FileIn: path linking to the MEEG file to correct
 % FileOut: output path 
- 
 [Root,file,ext]=fileparts(FileIn);
 clear S
 S.FileOut=FileOut;
