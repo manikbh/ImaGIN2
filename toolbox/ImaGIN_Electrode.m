@@ -129,8 +129,7 @@ for i0 = 1:size(t,1)
     Sensors = SpmMat.D.sensors.eeg;
     if length(unique(Sensors.label))~=length(Sensors.label)
         warning('Repeated label in the file.')
-    end
-
+    end    
     % Loop on all channels available in the file
     for i1 = 1:length(Sensors.label)
         sensLtmp = Sensors.label{i1};
@@ -257,35 +256,57 @@ for i0 = 1:size(t,1)
             end
         end
         % Replace with matching CSV name
-        iChanMatch1 = find(strcmpi(chLabel1, chMatchLog(:,1)));
-        iChanMatch2 = find(strcmpi(chLabel2, chMatchLog(:,1)));        
+        % This section now uses "Name" extracted from the csv to consider all electrode labels instead of the ones in "chMatchLog" as it used to do because it only considered electrodes which also recorded.
+        % Note by A. Boyer - 13/02/2020
+        elec_labels = Name';
+        elec_labels_no_primes = strrep(elec_labels,'p',''''); 
+        csv_all_electrodes = [elec_labels elec_labels_no_primes];      
+        
+        [iChanMatch1,~] = find(strcmpi(chLabel1, csv_all_electrodes));
+        [iChanMatch2,~] = find(strcmpi(chLabel2, csv_all_electrodes));        
         if isempty(iChanMatch1) && ~isempty(chInd1)
             tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
-            iChanMatch1 = find(strcmpi(tmpchLabel1, chMatchLog(:,1)));
+            [iChanMatch1,~] = find(strcmpi(tmpchLabel1, csv_all_electrodes));
             if isempty(iChanMatch1)
                 tmpchLabel1 = strrep(chLabel1, chInd1, ['0' chInd1]);
-                iChanMatch1 = find(strcmpi(tmpchLabel1, chMatchLog(:,1)));
+                [iChanMatch1,~] = find(strcmpi(tmpchLabel1, csv_all_electrodes));
             end   
         end        
         if isempty(iChanMatch2) && ~isempty(chInd2)
             tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
-            iChanMatch2 = find(strcmpi(tmpchLabel2, chMatchLog(:,1)));
+            [iChanMatch2,~] = find(strcmpi(tmpchLabel2, csv_all_electrodes));
             if isempty(iChanMatch2)
                 tmpchLabel2 = strrep(chLabel2, chInd2, ['0' chInd2]);
-                iChanMatch2 = find(strcmpi(tmpchLabel2, chMatchLog(:,1)));
+                [iChanMatch2,~] = find(strcmpi(tmpchLabel2, csv_all_electrodes));
+            end
+        end
+        
+        if ~isempty(iChanMatch1)
+            if sum(iChanMatch1==iChanMatch1(1)) == numel(iChanMatch1)
+                iChanMatch1 = iChanMatch1(1);
+            else
+                warning('Same label found for multiple electrodes');
+            end
+        end
+        if ~isempty(iChanMatch2)
+            if sum(iChanMatch2==iChanMatch2(1)) == numel(iChanMatch2)
+                iChanMatch2 = iChanMatch2(1);
+            else
+                warning('Same label found for multiple electrodes');
             end
         end
 
         if (length(iChanMatch1) == 1)
-            noteNameNew = strrep(noteNameNew, chLabel1,chMatchLog{iChanMatch1,2});
+            noteNameNew = strrep(noteNameNew, chLabel1,csv_all_electrodes{iChanMatch1,1}); % chMatchLog{iChanMatch1,2}
         end
         if (length(iChanMatch2) == 1)
-            noteNameNew = strrep(noteNameNew, chLabel2,chMatchLog{iChanMatch2,2});            
+            noteNameNew = strrep(noteNameNew, chLabel2,csv_all_electrodes{iChanMatch2,1}); % chMatchLog{iChanMatch2,2}            
         end
         if (length(iChanMatch1) == 1) &&  (length(iChanMatch2) == 1)
         SpmMat.D.trials.events(iEvt).type = noteNameNew;
         end
     end    
+    SpmMat.D.csv.chanlabels = csv_all_electrodes(:,1); % Add an extra field to the .mat so we have a listing of all channel labels in the csv.
     % Update existing .mat file
     save(SpmFile, '-struct', 'SpmMat');
 end

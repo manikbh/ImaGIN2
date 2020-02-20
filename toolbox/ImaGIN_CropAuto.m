@@ -20,6 +20,12 @@ function D = ImaGIN_CropAuto(S)
 % electrodes (series of contacts) not recorded at all. Ideally, a csv with
 % all existing contacts should be provided as input. Note by O. David on
 % 19/12/19.
+% The workaround introduced above modifies the naming convention of the
+% files/stimulations which is very sensible and impacts the rest of the
+% pipeline. Changes were reverted and modifications were made on previous
+% steps so all the stimulations found in the notes are considered, even if
+% one of the stimulating contact was never used for recording.
+% Note by A. Boyer on 12/02/2020
 
 if (nargin >= 1) && isfield(S, 'dataset') && ~isempty(S.dataset)
     sFile = S.dataset;
@@ -60,17 +66,6 @@ matDelCount = 0;
 matDeleted = {};
 %%
 evt = events(D);
-chanLabels = chanlabels(D);
-%Read electrode names
-ElectrodeNames={};
-for i1=1:numel(chanLabels)
-    Label=chanLabels{i1};
-    iLastLetter = find(~ismember(Label, '0123456789'), 1, 'last');
-
-    ElectrodeNames{i1}=Label(1:iLastLetter);
-end
-ElectrodeNames=setdiff(unique(ElectrodeNames),'ecg');
-
 evsize = size(evt,2);        % Number of events
 Notes  = cell(1,evsize);     % Events labels
 Time   = zeros(1,evsize);
@@ -439,7 +434,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         iLastLetter = '';
     end
     if ~isempty(iLastLetter) && length(Label) >= iLastLetter
-        chLabel =  upper(Label(1:iLastLetter));
+        chLabel =  Label(1:iLastLetter);
         chInd   =  Label(iLastLetter+1:end);
     else
         chLabel = '';
@@ -477,22 +472,22 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         chLabel2 = '';
     end
     
-    S.FileOut=  fullfile(DirOut, strcat(noteNameNew,'.txt'));
-    
-    iChanMatch1 = find(strcmpi(chLabel1, chanLabels));
-    iChanMatch2 = find(strcmpi(chLabel2, chanLabels));
-    
-%     if isempty(iChanMatch1) && ~isempty(chInd1)
-%         tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
-%         iChanMatch1 = find(strcmpi(tmpchLabel1, chanLabels));
-%     end
-%     if isempty(iChanMatch2) && ~isempty(chInd2)
-%         tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
-%         iChanMatch2 = find(strcmpi(tmpchLabel2, chanLabels));
-%     end
+    S.FileOut=  fullfile(DirOut, strcat(noteNameNew,'.txt'));   
 
-    iChanMatch1 = find(strcmpi(chLabel1(1:find(~ismember(chLabel1, '0123456789'), 1, 'last')), ElectrodeNames));
-    iChanMatch2 = find(strcmpi(chLabel2(1:find(~ismember(chLabel2, '0123456789'), 1, 'last')), ElectrodeNames));
+    mat_file = load([sFile '.mat']);
+    csv_chanlabels = mat_file.D.csv.chanlabels; % This new field is generated during the Electrode step so the .mat stores the channel labels found in the csv 
+    
+    iChanMatch1 = find(strcmpi(chLabel1, csv_chanlabels));
+    iChanMatch2 = find(strcmpi(chLabel2, csv_chanlabels));
+    
+    if isempty(iChanMatch1) && ~isempty(chInd1)
+        tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
+        iChanMatch1 = find(strcmpi(tmpchLabel1, csv_chanlabels));
+    end
+    if isempty(iChanMatch2) && ~isempty(chInd2)
+        tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
+        iChanMatch2 = find(strcmpi(tmpchLabel2, csv_chanlabels));
+    end
     
     %{  
     %% uncomment this section for some datasets
