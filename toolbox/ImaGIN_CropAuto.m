@@ -474,7 +474,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     
     S.FileOut=  fullfile(DirOut, strcat(noteNameNew,'.txt'));   
 
-    mat_file = load([sFile '.mat']);
+    mat_file = load(sFile);
     csv_chanlabels = mat_file.D.csv.chanlabels; % This new field is generated during the Electrode step so the .mat stores the channel labels found in the csv 
     
     iChanMatch1 = find(strcmpi(chLabel1, csv_chanlabels));
