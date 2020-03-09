@@ -618,12 +618,12 @@ for c = 1:length(KeepEvent) % Navigate all stim events
                         refCropFileNameMat  = fullfile(DirOut, refCropFileNameMats(i).name);
                         if ~strcmp(refCropFileNameMat,cropFileNameMat)
                             if exist(refCropFileNameMat,'file')== 2 && exist(cropFileNameMat,'file')== 2
-                                %Dref  = spm_eeg_load(refCropFileNameMat);
-                                %if isequal(Dref(:,:,:),Dcrop(:,:,:))
+                                Dref  = spm_eeg_load(refCropFileNameMat);
+                                if isequal(Dref(:,:,:),Dcrop(:,:,:))
                                     delete(cropFileNameMat);
                                     delete(cropFileNameDat);
-                                %end
-                                %clear Dref;
+                                end
+                                clear Dref;
                             end
                         end
                     end
