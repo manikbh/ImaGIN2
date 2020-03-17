@@ -223,7 +223,7 @@ if 1==1
             end
         end
         %Threshold cc
-        Threshold=0.4;
+        Threshold=0.5;
         tmp=find(cc>Threshold);
         stimulation=tmp;
 
