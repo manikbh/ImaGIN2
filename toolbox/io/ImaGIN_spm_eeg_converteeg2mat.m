@@ -104,6 +104,7 @@ for i1 = 1:Nfiles
     BstFormat = [];
     switch lower(fExt)
         case '.smr'
+            S.channel = S.SelectChannels;
             S2 = ImaGIN_copy_fields(S2, S, {'CreateTemplate', 'Fchannels', 'Bipolar', 'Montage', 'epochlength', 'coarse', 'channel'});
             D{i1} = ImaGIN_spm_eeg_rdata_spike2_mono(S2);
             

@@ -504,6 +504,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     
     disp(KeepEvent(c)), disp(S.EvtName);
     S.StimDetectVersion = StimDetectVersion ;
+    S.minStim= minStim;
     [stimTime,~,~] = ImaGIN_StimDetect(S);
     
     stimFq = StimFreq;

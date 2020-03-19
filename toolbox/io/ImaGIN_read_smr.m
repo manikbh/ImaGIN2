@@ -198,6 +198,15 @@ for i1 = Bad
             evt(n3).time = d(i2);
             evt(n3).value=n4;
         end
+        %for vero
+        if header.kind==2
+            n2=n2+1;
+            data.spike.timings{n2}=d;
+            data.spike.markers{n2}=[ones(length(d),1) zeros(length(d),3)];
+            data.spike.name{n2}=header.title;
+            data.spike.FileChannel(n2)=header.FileChannel;
+        end
+        %
     elseif header.kind==5
         n4=n4+1;
         for i2=1:size(d.timings,1)

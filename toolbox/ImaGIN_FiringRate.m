@@ -229,7 +229,7 @@ end
 Dfile = fullfile(D);
 % Copy results of spike analysis in the file structure
 Dmat.D.Firing.data = S;
-D = Dmat;
+D = Dmat.D;
 % Save file
 save(Dfile, 'D');
 

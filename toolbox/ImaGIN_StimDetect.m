@@ -36,6 +36,12 @@ catch
 end
 
 try
+    minStim=S.minStim;
+catch
+    minStim=spm_input('Minimal number of stimulations', '+1', 'r');
+end
+
+try
     FindBadChannels=S.FindBadChannels;
 catch
     FindBadChannels=1;
@@ -235,7 +241,7 @@ if 1==1
 %             if length(stimulation)>1
 %                 Stim=median(diff(stimulation)); %estimate actual stimulation frequency
 %             end
-            stimulation = removeOutliers( stimulation, Stim ) ;
+            stimulation = removeOutliers( stimulation, Stim , minStim) ;
             stimulation = stimulation(find(stimulation>round( 0.95 * Stim/2 )&stimulation+round( 0.95 * Stim/2 )<=length(d)))
 %     end
        
@@ -680,15 +686,15 @@ else
     end
     
     %Threshold cc
-    Threshold=0.5;
+    Threshold=0.4;
     tmp=find(cc>Threshold);
     stimulation=tmp;
         
 end
 
 
-%remove outliers close to other stims
-stimulation = removeOutliers( stimulation, Stim ) ;
+%remove outliers close to other stims or isolated clusters
+stimulation = removeOutliers( stimulation, Stim , minStim) ;
 
 
 if isempty(stimulation)
@@ -774,8 +780,8 @@ fclose(fid);
 end
 
 
-%remove outliers close to other stims
-function stimulation = removeOutliers( stimulation, Stim )
+%remove outliers close to other stims or isolated
+function stimulation = removeOutliers( stimulation, Stim , minStim)
 
 if length(stimulation)>1
     remove=[];
@@ -788,5 +794,23 @@ if length(stimulation)>1
 %     StimulationFreqU=D.fsample/median(diff(stimulation));   %uncorrected stim frequency
     stimulation=stimulation(setdiff(1:length(stimulation),remove));
 end
+
+%remove isolated stimulations (short clusters)
+dstimulation=diff(stimulation);
+index = find(dstimulation>=1.1*Stim);
+if ~isempty(index)
+    index = unique([1 index+1 length(stimulation)+1]);
+    dindex = diff(index);
+    remove=[];
+    for i1=2:length(dindex)
+        if dindex(i1)<minStim
+            remove=[remove sum(dindex(1:i1-1))+[1:dindex(i1)]];
+        end
+    end
+%     StimulationFreqU=D.fsample/median(diff(stimulation));   %uncorrected stim frequency
+    stimulation=stimulation(setdiff(1:length(stimulation),remove));
+end
+
+
 
 end
