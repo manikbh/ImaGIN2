@@ -115,6 +115,7 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'uus','us'); noteName = strrep(noteName,'CDuruue','');
     noteName = strrep(noteName,'Display',''); noteName = strrep(noteName,'Type',''); 
     noteName = strrep(noteName,'Impulsions_biphasiques','');
+    noteName = strrep(noteName,'_mA','mA'); %MIL
     [numb,nIDX]= regexp(noteName,'\d*','Match');
     if strcmpi(patientCode(5:end),'YUQ') && numel(numb) >= 3
         if length(noteName) > nIDX(3)
@@ -146,9 +147,13 @@ if strcmpi(patientCode(5:end),'MIL')
             xsub2 = regexp(Notes{KeepEvent(n)},rxp2,'match');
             xsub3 = regexp(Notes{KeepEvent(n)},rxp3,'match');
             
-            if ~isempty(xsub1) % insert stim Amplitude
-                Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},xsub1,Amp));
-            else
+%             if ~isempty(xsub1) % insert stim Amplitude
+%                 Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},xsub1,Amp));
+%             else
+%                 Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Amp];
+%             end
+%             
+            if isempty(xsub1) % insert stim Amplitude
                 Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Amp];
             end
             
@@ -199,7 +204,7 @@ if strcmpi(patientCode(5:end),'FRE')
     end
 end
 
-if mil_flag == 0 || fre_flag == 0
+if mil_flag == 0 && fre_flag == 0
     pVals = [];
     for k = 1:length(KeepEvent)
         xsub3 = regexp(Notes{KeepEvent(k)},rxp3,'match');
