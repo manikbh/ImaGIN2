@@ -446,6 +446,13 @@ sFile.acq_date = str_date(hdr.startdate);
 if ~isempty(hdr.logs)
     % Get all the event types
     evtList = hdr.logs(1).label;
+    
+    %OD changed to keep mA in the event note (do not know why it is in
+    %sublog
+    for i1=1:length(evtList)
+        evtList{i1} = strcat(evtList{i1}, hdr.logs(1).sublog{i1}(1:min([5 length(hdr.logs(1).sublog{i1})])));
+    end
+    
     % Events list
     [uniqueEvt, iUnique] = unique(evtList);
     uniqueEvt = evtList(sort(iUnique));
