@@ -136,6 +136,7 @@ mil_flag = 0;
 % that could be loaded 
 if strcmpi(patientCode(5:end),'MIL')
     load('/gin/data/database/02-raw/stim_parameters-ftract-mil.mat','stim_params')
+%     load('/Users/admin/Documents/Data/SEEG/F-TRACT/MIL/stim_parameters-ftract-mil.mat','stim_params')
     Loc = find(ismember(stim_params.PCode, patientCode), 1);
     if ~isempty(Loc)
         mil_flag = 1;
@@ -204,7 +205,7 @@ if strcmpi(patientCode(5:end),'FRE')
     end
 end
 
-if mil_flag == 0 && fre_flag == 0
+if mil_flag == 0 || fre_flag == 0
     pVals = [];
     for k = 1:length(KeepEvent)
         xsub3 = regexp(Notes{KeepEvent(k)},rxp3,'match');
