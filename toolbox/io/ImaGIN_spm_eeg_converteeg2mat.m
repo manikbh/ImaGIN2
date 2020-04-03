@@ -186,7 +186,9 @@ function D = ImaGIN_convert_brainstorm(InputFile, FileFormat, OutputFile, SelCha
             [sFileIn, ChannelMat] = in_fopen_nk(InputFile);
         % EDF / XLTEK
         case 'EEG-EDF'
-            [sFileIn, ChannelMat] = in_fopen_edf(InputFile);
+            ImportOptions = db_template('ImportOptions');
+            ImportOptions.DisplayMessages=0;
+            [sFileIn, ChannelMat] = in_fopen_edf(InputFile,ImportOptions);
             
             % For XLTEK files exported as EDF + events in .txt file: reading the events
             XltekEvtFile = [InputFile(1:end-3) 'txt'];
