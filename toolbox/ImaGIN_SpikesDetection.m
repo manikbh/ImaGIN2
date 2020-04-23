@@ -42,7 +42,7 @@ function ImaGIN_SpikesDetection(S)
     bp_concat_zeroed = zeros(size(bp_baseline_obj));
     for cc=1:nchannels(bp_baseline_obj)
         bp_chan = chanlabels(bp_baseline_obj,cc);
-        mono_chans = split(bp_chan,'-');
+        mono_chans = regexp(bp_chan,'-','split'); % split(bp_chan,'-')
         chan1_idx = indchannel(D,mono_chans{1});
         chan2_idx = indchannel(D,mono_chans{2});
         both_good = (concat_zeroed(chan1_idx,:,1) == 1 & concat_zeroed(chan2_idx,:,1) == 1); 
