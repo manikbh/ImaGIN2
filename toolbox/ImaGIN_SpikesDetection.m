@@ -1,168 +1,95 @@
 function ImaGIN_SpikesDetection(S)
- 
-sFile = S.dataset;
-DirOut= S.FileOut;
-try
-    D = spm_eeg_load(sFile); % Load the converted file .mat
-catch
-    sFile = spm_select(1, '\.mat$', 'Select data file');
-    D=spm_eeg_load(sFile);
-end
-%%
-evt = events(D);
-evsize = size(evt,2);        % Number of events
-Notes  = cell(1,evsize);     % Events labels
-Time   = zeros(1,evsize);
-totTime= max(time(D));
-StimeWidth = [];
-% Extract events properties (label and time in sampling)
-for i = 1: evsize
-    Notes{i}  = evt(i).type;
-    Time(1,i) = evt(i).time;
-end
+% This function extracts and concatenates the baselines from cropped, qualitatively controlled, stimulation files.
+% It runs Delphos' spike detection on extracted baselines after bipolar montage computation.
+% It then computes corrected spike rates for each bipolar recording channel.
 
-%%
-% Read notes to keep only those related to a stimulation
-KeepEvent=[];
-for c=1:evsize % Navigate all available events
-    
-    xpr1  = '\w*hz_\w*';
-    xpr2  = '\w*stim\w*';
-    xpr2b  = '\w*CONNECT TO:\w*';
-    xpr3  = '\w*mA\w*';
-    xpr4  = '\w*50.0hz\w*';
-    xpr5  = '\w*50hz\w*';
-    xpr6  = '\w*50 hz\w*';
-    
-    xpr4b  = '\w*55.0hz\w*';
-    xpr5b  = '\w*55hz\w*';
-    xpr6b  = '\w*55 hz\w*';
-    
-    xpr7  = '\w*alarme\w*';
-    xpr8  = '\w*SE1Hz\w*';
-    xpr9  = '\w*SE 1Hz\w*';
-    xpr10  = 'crise';
-    xpr11  = '\w*OFF\w*';
-    xpr12  = '\w*t65535\w*';
-    [~,di]=regexp(Notes{c},'\d*','Match');
-    if ~isempty(di)
-        if ~isempty(regexpi(Notes{c},xpr4)) || ~isempty(regexpi(Notes{c},xpr5)) || ...
-                ~isempty(regexpi(Notes{c},xpr6)) || ~isempty(regexpi(Notes{c},xpr7)) || ...
-                ~isempty(regexpi(Notes{c},xpr8)) || ~isempty(regexpi(Notes{c},xpr9)) || ...
-                ~isempty(regexpi(Notes{c},xpr12))||~isempty(regexpi(Notes{c},xpr4b)) || ...
-                ~isempty(regexpi(Notes{c},xpr5b))|| ~isempty(regexpi(Notes{c},xpr6b))||...
-                ~isempty(regexpi(Notes{c},xpr11))|| strcmpi(Notes{c}(1:min([length(Notes{c}) 5])),xpr10)
-            KeepEvent=[KeepEvent c];
-        elseif ~isempty(regexpi(Notes{c},xpr1))
-            KeepEvent=[KeepEvent c];
-        elseif ~isempty(regexpi(Notes{c},xpr2))
-            KeepEvent=[KeepEvent c];
-        elseif ~isempty(regexpi(Notes{c},xpr2b))
-            KeepEvent=[KeepEvent c];    
-        elseif ~isempty(regexp(Notes{c},xpr3,'ONCE'))
-            KeepEvent=[KeepEvent c];
-        elseif ismember(lower(Notes{c}(1)),['a':'z']) && di(1)<=4 && ~strcmp(regexprep(Notes{c},' ',''),'SE1Hz') && ~strcmp(regexprep(Notes{c},' ',''),'SE50Hz')
-            KeepEvent=[KeepEvent c];
-        end
+    % Vars parsing
+    stims_files = S.stims_files;
+    path_out = S.path_out;
+
+    % Extract baselines: get the pre-stimulation period for each stimulation and concatenate them for each channel.
+    concat_baselines = []; % Store timeseries
+    concat_zeroed = []; % Store booleans later used as logic gates on timeseries
+    for ff=1:numel(stims_files)
+        D = spm_eeg_load(stims_files{ff});  
+        time_axis = time(D);
+        onset = timeonset(D);    
+        negative_time_idxes = find(time_axis > onset+1 & time_axis < -1); % Arbitrary time margins of 1 s around prestimulus period    
+        % Extract baseline of the stimulation
+        file_baselines = D(:,negative_time_idxes,1); 
+        concat_baselines = [concat_baselines file_baselines]; 
+        % Generate the corresponding boolean matrix to identify good (1) versus bad (0) samples
+        file_zeroed = ones(size(file_baselines));
+        all_channels_idxes = indchantype(D,'ALL');
+        good_eeg_channels_idxes = indchantype(D,'EEG','GOOD');          
+        channels_to_zeroed = setdiff(all_channels_idxes,good_eeg_channels_idxes); 
+        file_zeroed(channels_to_zeroed,:,1) = zeros(numel(channels_to_zeroed),numel(negative_time_idxes));
+        concat_zeroed = [concat_zeroed file_zeroed];
     end
-end
 
-%% ------------------------------------------------
-for c=1:length(KeepEvent) % Navigate all stim events
-    
-    % Detect stimulations and stimulation indices & save in text file
-    [pth,matFile,~]= fileparts(sFile);
-    clear S
-    S.Fname = fullfile(pth, matFile);
-    S.Channels = [];
-    S.StimStart= Time(1,KeepEvent(c))-0.5;
-    if c < length(KeepEvent)
-        S.StimEnd  = min([Time(1,KeepEvent(c))+180 Time(1,KeepEvent(c+1))-0.5]);
-    else
-        S.StimEnd  = min([totTime Time(1,KeepEvent(c))+120]);
+    % Generate the baseline object.
+    baseline_file = fullfile(path_out,'baseline');
+    baseline_obj = clone(D,baseline_file,[size(concat_baselines,1) size(concat_baselines,2) 1],3);
+    baseline_obj(:) = concat_baselines(:);
+    baseline_obj = events(baseline_obj,[],{''});
+    baseline_obj = timeonset(baseline_obj,0);
+
+    % Compute bipolar montage on baseline object to get the bipolar baseline object
+    S.Fname = baseline_file;
+    bp_baseline_obj = ImaGIN_BipolarMontage(S);  
+
+    % Estimate bipolar logic gates from monopolar boolean matrix   
+    bp_concat_zeroed = zeros(size(bp_baseline_obj));
+    for cc=1:nchannels(bp_baseline_obj)
+        bp_chan = chanlabels(bp_baseline_obj,cc);
+        mono_chans = split(bp_chan,'-');
+        chan1_idx = indchannel(D,mono_chans{1});
+        chan2_idx = indchannel(D,mono_chans{2});
+        both_good = (concat_zeroed(chan1_idx,:,1) == 1 & concat_zeroed(chan2_idx,:,1) == 1); 
+        bp_concat_zeroed(cc,find(both_good)) = ones(1,numel(find(both_good))); 
     end
-    S.StimContinuous= 0;
-    S.EvtName  = Notes{KeepEvent(c)};
-    S.StimFreq = 1; 
-    [~,stimIdx,~] = ImaGIN_StimDetect(S); % stims detection
-    
-    if ~isempty(stimIdx)
-        StimeWidth = [StimeWidth;stimIdx(1),stimIdx(end)];
+
+    % Multiply the bipolar baselines with the bipolar logic gates and create the gated bipolar baseline object
+    gated_bp_baseline_obj = clone(bp_baseline_obj,fullfile(path_out,'gated_bp_baseline')); 
+    gated_bp_baseline_obj(:) = bp_baseline_obj(:).*bp_concat_zeroed(:);
+
+    % Run Delphos' spike detection on gated baselines
+    fs = gated_bp_baseline_obj.fsample; 
+    results = Delphos_detector(gated_bp_baseline_obj,chanlabels(gated_bp_baseline_obj),'SEEG',fs,{'Spk'},[],[],40,[]);
+
+    % Calculate and store corrected spike rates in a table
+    total_samples = nsamples(gated_bp_baseline_obj);
+    total_times = [];    
+    for cc=1:nchannels(gated_bp_baseline_obj)
+        zeroed_samples = numel(find(~bp_concat_zeroed(cc,:,1)));      
+        total_times(cc) = (total_samples - zeroed_samples) /fs/60; % Total recording time in minutes
     end
+    channels = [results.labels]';
+    rates = round(results.n_Spk./total_times',1); % Round to nearest decimal
+    rates_table  = table(channels,rates);
+
+    % Store spike features in a table
+    spks_positions = [results.markers.position]';
+    spks_type = {results.markers.label}';
+    spks_channels = {results.markers.channels}';
+    spks_values = {results.markers.value}';
+    spks_table = table(spks_channels,spks_type,spks_positions,spks_values);
+
+    % Store all tables in a .mat
+    [~, bname,~] = fileparts(gated_bp_baseline_obj.fnamedat);
+    spkFileName = ['SPK_' bname '.mat'];
+    spkFile.spikeRate = rates_table;
+    spkFile.markers   = spks_table;
+    spkFile.baseline  = ['Total duration of ' num2str((nsamples(gated_bp_baseline_obj)/fsample(gated_bp_baseline_obj))/60)  ' minutes'];
+    spkFile.comment   = 'Spike rate is number of spikes per minute whithin a bipolar channel';
+    save(fullfile(path_out,spkFileName), 'spkFile');
+    
+    % Store rate table in an individual files for easy extraction
+    rate_table_file = ['spike_rate_' bname '.mat'];
+    spike_rates = [channels,num2cell(rates)];
+    save(fullfile(path_out,rate_table_file), 'spike_rates');
+    
+    % Ending step
+    set_final_status('OK');
+    disp('Done');
 end
-
-nonIdx = ~ismember(Notes, Notes(KeepEvent));
-nonStimEvents = evt(nonIdx);
-
-idx1 = StimeWidth(1,1) - 3;
-SEEG = D(:,1:idx1,1);
-
-for i = 1:size(StimeWidth,1)-1
-    wd1 = StimeWidth(i+1,1)-3;
-    wd2 = StimeWidth(i,2) + 3;
-    SEEG = [SEEG, D(:,wd2:wd1,1)];
-end
-
-[~, fname,~] = fileparts(sFile);
-
-basefile  = fullfile(DirOut, ['Baseline_',fname]);
-n_t       = size(SEEG,2);
-D2        = clone(D, basefile, [D.nchannels n_t 1]);
-D2(:,:,1) = SEEG;
-D2        = events(D2,1,nonStimEvents);
-save(D2);
-
-%%
-clearvars -except  basefile DirOut fname;
-S.Fname = basefile;
-D = ImaGIN_BipolarMontage(S);
-% Perform a longitudinal bipolar montage
-
-delete([basefile ,'*'])
-delete(fullfile(DirOut ,'*.txt'))
-%  % TODO: low-pass filter (15 or 30Hz)
-%  % TODO: high-pass filter (1.6Hz)
-%
-%
-
-
-%%
-td = time(D);
-idx = find(td);
-fs   = D.fsample;
-elec   = sensors(D,'eeg');
-labels = elec.label;
-nonIdx = ~ismember(labels,{'ecg1','ecg2','ECG','ecg','ecg2ecg1', 'ecg1ecg2'});
-labels = labels(nonIdx);
-nc     = numel(labels);
-seeg   = D(1:nc,(idx));
-
-totRec = (D.nsamples/fs)/60; %time in minutes;
-
-%% Run Delphos_Spikes Detection 
-bgnTime = tic;
-results = Delphos_detector(seeg,labels, 'SEEG', fs, {'Spk'}, [], [], 40, []);
-stpTime = toc(bgnTime);
-fprintf('\n Time Delphos spends %.2f min for %s: %.2f min recordings ',stpTime/60, fname, totRec);
-
-%% results
-labels   = [results.labels]';
-spk_Rate = round(10*(results.n_Spk)./totRec)/10; % Take result to one decimal place
-allSPKs  = table(labels, spk_Rate);
-%%
-pasition = [results.markers.position]';
-marks    = {results.markers.label}';
-channels = {results.markers.channels}';
-%%
-SPKmarkers = table(channels,marks, pasition);
-[~, bname,~] = fileparts(D.fnamedat);
-spkFileName = ['SPK_' bname '.mat'];
-spkFile.spikeRate = allSPKs;
-spkFile.markers   = SPKmarkers;
-spkFile.baseline  = ['duration of ' num2str(totRec)  ' minutes'];
-spkFile.comment   = 'Spike rate is number of spikes per minute whithin a bipolar channel';
-save(fullfile(DirOut,spkFileName), 'spkFile');
-
-set_final_status('OK');
-disp('Done');
-
