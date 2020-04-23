@@ -33,11 +33,13 @@ function ImaGIN_SpikesDetection(S)
     baseline_obj(:) = concat_baselines(:);
     baseline_obj = events(baseline_obj,[],{''});
     baseline_obj = timeonset(baseline_obj,0);
-
+    save(baseline_obj);
+    
     % Compute bipolar montage on baseline object to get the bipolar baseline object
     S.Fname = baseline_file;
     bp_baseline_obj = ImaGIN_BipolarMontage(S);  
-
+    save(bp_baseline_obj);
+    
     % Estimate bipolar logic gates from monopolar boolean matrix   
     bp_concat_zeroed = zeros(size(bp_baseline_obj));
     for cc=1:nchannels(bp_baseline_obj)
@@ -50,8 +52,13 @@ function ImaGIN_SpikesDetection(S)
     end
 
     % Multiply the bipolar baselines with the bipolar logic gates and create the gated bipolar baseline object
+    gated_bp_timseries = [];
+    for cc=1:nchannels(bp_baseline_obj) % This loops exists because of memory issues.
+        gated_bp_timseries(cc,:) = bp_baseline_obj(cc,:).*bp_concat_zeroed(cc,:);        
+    end   
     gated_bp_baseline_obj = clone(bp_baseline_obj,fullfile(path_out,'gated_bp_baseline')); 
-    gated_bp_baseline_obj(:) = bp_baseline_obj(:).*bp_concat_zeroed(:);
+    gated_bp_baseline_obj(:,:) = gated_bp_timseries;
+    save(gated_bp_baseline_obj);
 
     % Run Delphos' spike detection on gated baselines
     fs = gated_bp_baseline_obj.fsample; 
