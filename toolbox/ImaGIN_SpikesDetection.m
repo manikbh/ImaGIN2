@@ -52,12 +52,12 @@ function ImaGIN_SpikesDetection(S)
     end
 
     % Multiply the bipolar baselines with the bipolar logic gates and create the gated bipolar baseline object
-    gated_bp_timseries = [];
-    for cc=1:nchannels(bp_baseline_obj) % This loops exists because of memory issues.
-        gated_bp_timseries(cc,:) = bp_baseline_obj(cc,:).*bp_concat_zeroed(cc,:);        
+    gated_bp_timeseries = [];
+    for cc=1:nchannels(bp_baseline_obj) % This loop exists because of memory issues.
+        gated_bp_timeseries(cc,:) = bp_baseline_obj(cc,:).*bp_concat_zeroed(cc,:);        
     end   
     gated_bp_baseline_obj = clone(bp_baseline_obj,fullfile(path_out,'gated_bp_baseline')); 
-    gated_bp_baseline_obj(:,:) = gated_bp_timseries;
+    gated_bp_baseline_obj(:,:) = gated_bp_timeseries;
     save(gated_bp_baseline_obj);
 
     % Run Delphos' spike detection on gated baselines
