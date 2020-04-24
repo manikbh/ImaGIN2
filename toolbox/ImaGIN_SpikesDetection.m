@@ -9,8 +9,9 @@ function ImaGIN_SpikesDetection(S)
 
     % Extract baselines: get the pre-stimulation period for each stimulation and concatenate them for each channel.
     concat_baselines = []; % Store timeseries
-    concat_zeroed = []; % Store booleans later used as logic gates on timeseries
+    concat_zeroed = []; % Store booleans later used for the correction of spike rates
     for ff=1:numel(stims_files)
+        clear D;
         D = spm_eeg_load(stims_files{ff});  
         time_axis = time(D);
         onset = timeonset(D);    
@@ -34,6 +35,7 @@ function ImaGIN_SpikesDetection(S)
     baseline_obj = events(baseline_obj,[],{''});
     baseline_obj = timeonset(baseline_obj,0);
     save(baseline_obj);
+    clear baseline_obj;
     
     % Compute bipolar montage on baseline object to get the bipolar baseline object
     S.Fname = baseline_file;
@@ -50,7 +52,8 @@ function ImaGIN_SpikesDetection(S)
         both_good = (concat_zeroed(chan1_idx,:,1) == 1 & concat_zeroed(chan2_idx,:,1) == 1); 
         bp_concat_zeroed(cc,find(both_good)) = ones(1,numel(find(both_good))); 
     end
-
+    clear D;
+    
     % Multiply the bipolar baselines with the bipolar logic gates and create the gated bipolar baseline object
     gated_bp_timeseries = [];
     for cc=1:nchannels(bp_baseline_obj) % This loop exists because of memory issues.
@@ -59,6 +62,7 @@ function ImaGIN_SpikesDetection(S)
     gated_bp_baseline_obj = clone(bp_baseline_obj,fullfile(path_out,'gated_bp_baseline')); 
     gated_bp_baseline_obj(:,:) = gated_bp_timeseries;
     save(gated_bp_baseline_obj);
+    clear bp_baseline_obj;
 
     % Run Delphos' spike detection on gated baselines
     fs = gated_bp_baseline_obj.fsample; 
