@@ -2,29 +2,64 @@ function ImaGIN_SpikesDetection(S)
 % This function extracts and concatenates the baselines from cropped, qualitatively controlled, stimulation files.
 % It runs Delphos' spike detection on extracted baselines after bipolar montage computation.
 % It then computes corrected spike rates for each bipolar recording channel.
+% Manipulating the data of hundreds of stimulation files brings performance (RAM) issues...
+% ...which are addressed by zeroing the baselines during the extraction loop, at the expense of readability.
 
     % Vars parsing
     stims_files = S.stims_files;
     path_out = S.path_out;
-
+    
+    % Establish the channel mapping from monopolar to bipolar using a single stimulation file    
+    mono_stimulation_file = fullfile(path_out,'single_stimulation');
+    mono_stimulation_obj = clone(spm_eeg_load(stims_files{1}),mono_stimulation_file); 
+    Sbp.Fname = mono_stimulation_file;
+    bp_stimulation_obj = ImaGIN_BipolarMontage(Sbp);   
+    clear channels_map;
+    for cc=1:nchannels(bp_stimulation_obj)
+        bipolar_chan = chanlabels(bp_stimulation_obj,cc);
+        mono_chans = regexp(bipolar_chan,'-','split');  
+        channels_map(cc).bp_chan = bipolar_chan;
+        channels_map(cc).bp_idx = cc;
+        channels_map(cc).mono_chan1 = mono_chans{1}{1};
+        channels_map(cc).mono_chan2 = mono_chans{1}{2};
+        channels_map(cc).mono_idx1 = indchannel(mono_stimulation_obj,mono_chans{1}{1});
+        channels_map(cc).mono_idx2 = indchannel(mono_stimulation_obj,mono_chans{1}{2});
+    end
+    clear mono_stimulation_obj bp_stimulation_obj; 
+    
     % Extract baselines: get the pre-stimulation period for each stimulation and concatenate them for each channel.
     concat_baselines = []; % Store timeseries
     concat_zeroed = []; % Store booleans later used for the correction of spike rates
     for ff=1:numel(stims_files)
         clear D;
-        D = spm_eeg_load(stims_files{ff});  
-        time_axis = time(D);
-        onset = timeonset(D);    
-        negative_time_idxes = find(time_axis > onset+1 & time_axis < -1); % Arbitrary time margins of 1 s around prestimulus period    
-        % Extract baseline of the stimulation
-        file_baselines = D(:,negative_time_idxes,1); 
-        concat_baselines = [concat_baselines file_baselines]; 
-        % Generate the corresponding boolean matrix to identify good (1) versus bad (0) samples
-        file_zeroed = ones(size(file_baselines));
+        D = spm_eeg_load(stims_files{ff});                
+        % Get the list of monopolar bad channels
         all_channels_idxes = indchantype(D,'ALL');
         good_eeg_channels_idxes = indchantype(D,'EEG','GOOD');          
-        channels_to_zeroed = setdiff(all_channels_idxes,good_eeg_channels_idxes); 
-        file_zeroed(channels_to_zeroed,:,1) = zeros(numel(channels_to_zeroed),numel(negative_time_idxes));
+        mono_bad_channel_idxes = setdiff(all_channels_idxes,good_eeg_channels_idxes);
+        % Use the monopolar-bipolar channel mapping to identify monopolar channels later coupled with bad channels
+        bp_bad_channels_idxes = [];
+        for cc=1:numel(mono_bad_channel_idxes)           
+            bad_channel_1_map = find(mono_bad_channel_idxes(cc) == [channels_map.mono_idx1]);
+            bad_channel_2_map = find(mono_bad_channel_idxes(cc) == [channels_map.mono_idx2]);            
+            circular_bp_bad_channels_idxes = unique([channels_map(bad_channel_1_map).mono_idx1,...
+            channels_map(bad_channel_1_map).mono_idx2,...
+            channels_map(bad_channel_2_map).mono_idx1,...
+            channels_map(bad_channel_2_map).mono_idx2]);       
+            bp_bad_channels_idxes = unique([bp_bad_channels_idxes circular_bp_bad_channels_idxes]);           
+        end
+        % Concatenate all identified bad channels
+        all_bad_channels_idxes = unique([mono_bad_channel_idxes bp_bad_channels_idxes]);
+        % Extract baseline of the stimulation and zeroed all bad channels
+        time_axis = time(D);
+        onset = timeonset(D);        
+        negative_time_idxes = find(time_axis > onset+1 & time_axis < -1); % Arbitrary time margins of 1 s around prestimulus period    
+        file_baselines = D(:,negative_time_idxes,1);        
+        file_baselines(all_bad_channels_idxes,:,1) = zeros(numel(all_bad_channels_idxes),numel(negative_time_idxes));       
+        concat_baselines = [concat_baselines file_baselines];        
+        % Generate the corresponding boolean matrix to identify good (1) versus bad (0) samples
+        file_zeroed = ones(size(file_baselines));
+        file_zeroed(all_bad_channels_idxes,:,1) = zeros(numel(all_bad_channels_idxes),numel(negative_time_idxes));
         concat_zeroed = [concat_zeroed file_zeroed];
     end
 
@@ -34,44 +69,31 @@ function ImaGIN_SpikesDetection(S)
     baseline_obj(:) = concat_baselines(:);
     baseline_obj = events(baseline_obj,[],{''});
     baseline_obj = timeonset(baseline_obj,0);
-    save(baseline_obj);
     clear baseline_obj;
     
     % Compute bipolar montage on baseline object to get the bipolar baseline object
     S.Fname = baseline_file;
     bp_baseline_obj = ImaGIN_BipolarMontage(S);  
-    save(bp_baseline_obj);
     
-    % Estimate bipolar logic gates from monopolar boolean matrix   
+    % Estimate bipolar boolean matrix from monopolar boolean matrix   
     bp_concat_zeroed = zeros(size(bp_baseline_obj));
     for cc=1:nchannels(bp_baseline_obj)
-        bp_chan = chanlabels(bp_baseline_obj,cc);
-        mono_chans = regexp(bp_chan,'-','split'); % split(bp_chan,'-')
-        chan1_idx = indchannel(D,mono_chans{1}{1}); % mono_chans{1}
-        chan2_idx = indchannel(D,mono_chans{1}{2}); % mono_chans{2}
+        bipolar_chan = chanlabels(bp_baseline_obj,cc);
+        mono_chans = regexp(bipolar_chan,'-','split');
+        chan1_idx = indchannel(D,mono_chans{1}{1});
+        chan2_idx = indchannel(D,mono_chans{1}{2});
         both_good = (concat_zeroed(chan1_idx,:,1) == 1 & concat_zeroed(chan2_idx,:,1) == 1); 
         bp_concat_zeroed(cc,find(both_good)) = ones(1,numel(find(both_good))); 
     end
-    clear D;
-    
-    % Multiply the bipolar baselines with the bipolar logic gates and create the gated bipolar baseline object
-    gated_bp_timeseries = [];
-    for cc=1:nchannels(bp_baseline_obj) % This loop exists because of memory issues.
-        gated_bp_timeseries(cc,:) = bp_baseline_obj(cc,:).*bp_concat_zeroed(cc,:);        
-    end   
-    gated_bp_baseline_obj = clone(bp_baseline_obj,fullfile(path_out,'gated_bp_baseline')); 
-    gated_bp_baseline_obj(:,:) = gated_bp_timeseries;
-    save(gated_bp_baseline_obj);
-    clear bp_baseline_obj;
 
-    % Run Delphos' spike detection on gated baselines
-    fs = gated_bp_baseline_obj.fsample; 
-    results = Delphos_detector(gated_bp_baseline_obj,chanlabels(gated_bp_baseline_obj),'SEEG',fs,{'Spk'},[],[],40,[]);
+    % Run Delphos' spike detection on baselines
+    fs = bp_baseline_obj.fsample; 
+    results = Delphos_detector(bp_baseline_obj,chanlabels(bp_baseline_obj),'SEEG',fs,{'Spk'},[],[],40,[]);
 
     % Calculate and store corrected spike rates in a table
-    total_samples = nsamples(gated_bp_baseline_obj);
+    total_samples = nsamples(bp_baseline_obj);
     total_times = [];    
-    for cc=1:nchannels(gated_bp_baseline_obj)
+    for cc=1:nchannels(bp_baseline_obj)
         zeroed_samples = numel(find(~bp_concat_zeroed(cc,:,1)));      
         total_times(cc) = (total_samples - zeroed_samples) /fs/60; % Total recording time in minutes
     end
@@ -87,11 +109,11 @@ function ImaGIN_SpikesDetection(S)
     spks_table = table(spks_channels,spks_type,spks_positions,spks_values);
 
     % Store all tables in a .mat
-    [~, bname,~] = fileparts(gated_bp_baseline_obj.fnamedat);
+    [~,bname,~] = fileparts(bp_baseline_obj.fname);
     spkFileName = ['SPK_' bname '.mat'];
     spkFile.spikeRate = rates_table;
     spkFile.markers   = spks_table;
-    spkFile.baseline  = ['Total duration of ' num2str((nsamples(gated_bp_baseline_obj)/fsample(gated_bp_baseline_obj))/60)  ' minutes'];
+    spkFile.baseline  = ['Total duration of ' num2str((nsamples(bp_baseline_obj)/fsample(bp_baseline_obj))/60)  ' minutes'];
     spkFile.comment   = 'Spike rate is number of spikes per minute whithin a bipolar channel';
     save(fullfile(path_out,spkFileName), 'spkFile');
     
