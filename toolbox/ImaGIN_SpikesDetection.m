@@ -21,9 +21,57 @@ function ImaGIN_SpikesDetection(S)
         channels_map(cc).bp_chan = bipolar_chan;
         channels_map(cc).bp_idx = cc;
         channels_map(cc).mono_chan1 = mono_chans{1}{1};
-        channels_map(cc).mono_chan2 = mono_chans{1}{2};
-        channels_map(cc).mono_idx1 = indchannel(mono_stimulation_obj,mono_chans{1}{1});
-        channels_map(cc).mono_idx2 = indchannel(mono_stimulation_obj,mono_chans{1}{2});
+        channels_map(cc).mono_chan2 = mono_chans{1}{2};        
+        
+        % Test if the channel label exists in the monopolar object, if not, add a '0' and try again.
+        chan1_idx = indchannel(mono_stimulation_obj,mono_chans{1}{1});
+        if numel(chan1_idx) == 0
+            old_name = mono_chans{1}{1};
+            match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
+            new_name = [match.letters '0' match.digits];
+            channels_map(cc).mono_chan1 = new_name;
+            chan1_idx = indchannel(mono_stimulation_obj,new_name);
+        end       
+        chan2_idx = indchannel(mono_stimulation_obj,mono_chans{1}{2});
+        if numel(chan2_idx) == 0
+            old_name = mono_chans{1}{2};
+            match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
+            new_name = [match.letters '0' match.digits];
+            channels_map(cc).mono_chan1 = new_name;
+            chan2_idx = indchannel(mono_stimulation_obj,new_name);
+        end  
+        
+        % Test and correct for duplicated labels in the monopolar object
+        if numel(chan1_idx) == 0 % Could not find the monopolar label
+            error('Could not find the monopolar channel from the bipolar montage.');
+        elseif numel(chan1_idx) == 1 % If 1 match, as expected, do nothing
+            %pass
+        elseif numel(chan1_idx) == 2 % If 2 matches, find and eliminate the channel without coordinates AND flagged as badchannel (scalp measurement)
+            monopolar_sensors = sensors(mono_stimulation_obj,'EEG');            
+            chan1_matching = [sum(badchannels(mono_stimulation_obj) == chan1_idx(1)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan1_idx(1),:))) == 3,...
+                sum(badchannels(mono_stimulation_obj) == chan1_idx(2)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan1_idx(2),:))) == 3]; % [0,1] or [1,0]
+            chan1_idx = chan1_idx(~chan1_matching(:));
+            clear monopolar_sensors;
+        else
+            error('3 or more channels with the same label')        
+        end
+        % Same logic as for chan1_idx
+        if numel(chan2_idx) == 0
+            error('Could not find the monopolar channel from the bipolar montage.');
+        elseif numel(chan2_idx) == 1
+            %pass
+        elseif numel(chan2_idx) == 2
+            monopolar_sensors = sensors(mono_stimulation_obj,'EEG');            
+            chan2_matching = [sum(badchannels(mono_stimulation_obj) == chan2_idx(1)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan2_idx(1),:))) == 3,...
+                sum(badchannels(mono_stimulation_obj) == chan2_idx(2)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan2_idx(2),:))) == 3];            
+            chan2_idx = chan2_idx(~chan2_matching(:));
+            clear monopolar_sensors;
+        else
+            error('3 or more channels with the same label')        
+        end     
+        
+        channels_map(cc).mono_idx1 = chan1_idx;
+        channels_map(cc).mono_idx2 = chan2_idx;
     end
     clear mono_stimulation_obj bp_stimulation_obj; 
     
@@ -64,7 +112,7 @@ function ImaGIN_SpikesDetection(S)
     end
 
     % Generate the baseline object.
-    baseline_file = fullfile(path_out,'baseline');
+    baseline_file = fullfile(path_out,'Baseline');
     baseline_obj = clone(D,baseline_file,[size(concat_baselines,1) size(concat_baselines,2) 1],3);
     baseline_obj(:) = concat_baselines(:);
     baseline_obj = events(baseline_obj,[],{''});
@@ -77,12 +125,8 @@ function ImaGIN_SpikesDetection(S)
     
     % Estimate bipolar boolean matrix from monopolar boolean matrix   
     bp_concat_zeroed = zeros(size(bp_baseline_obj));
-    for cc=1:nchannels(bp_baseline_obj)
-        bipolar_chan = chanlabels(bp_baseline_obj,cc);
-        mono_chans = regexp(bipolar_chan,'-','split');
-        chan1_idx = indchannel(D,mono_chans{1}{1});
-        chan2_idx = indchannel(D,mono_chans{1}{2});
-        both_good = (concat_zeroed(chan1_idx,:,1) == 1 & concat_zeroed(chan2_idx,:,1) == 1); 
+    for cc=1:numel(channels_map)  
+        both_good = (concat_zeroed(channels_map(cc).mono_idx1,:,1) == 1 & concat_zeroed(channels_map(cc).mono_idx2,:,1) == 1); 
         bp_concat_zeroed(cc,find(both_good)) = ones(1,numel(find(both_good))); 
     end
 
@@ -110,7 +154,7 @@ function ImaGIN_SpikesDetection(S)
 
     % Store all tables in a .mat
     [~,bname,~] = fileparts(bp_baseline_obj.fname);
-    spkFileName = ['SPK_' bname '.mat'];
+    spkFileName = ['Results_' bname '.mat'];
     spkFile.spikeRate = rates_table;
     spkFile.markers   = spks_table;
     spkFile.baseline  = ['Total duration of ' num2str((nsamples(bp_baseline_obj)/fsample(bp_baseline_obj))/60)  ' minutes'];
@@ -118,7 +162,7 @@ function ImaGIN_SpikesDetection(S)
     save(fullfile(path_out,spkFileName), 'spkFile');
     
     % Store rate table in an individual files for easy extraction
-    rate_table_file = ['spike_rate_' bname '.mat'];
+    rate_table_file = 'SPK_bBaseline_rates.mat';
     spike_rates = [channels,num2cell(rates)];
     save(fullfile(path_out,rate_table_file), 'spike_rates');
     
