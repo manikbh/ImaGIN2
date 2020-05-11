@@ -37,7 +37,7 @@ function ImaGIN_SpikesDetection(S)
             old_name = mono_chans{1}{2};
             match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
             new_name = [match.letters '0' match.digits];
-            channels_map(cc).mono_chan1 = new_name;
+            channels_map(cc).mono_chan2 = new_name;
             chan2_idx = indchannel(mono_stimulation_obj,new_name);
         end  
         
