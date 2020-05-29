@@ -116,6 +116,12 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName = strrep(noteName,'Display',''); noteName = strrep(noteName,'Type',''); 
     noteName = strrep(noteName,'Impulsions_biphasiques','');
     noteName = strrep(noteName,'_mA','mA'); %MIL
+    noteName = strrep(noteName,'_ma','mA'); %BUC
+    noteName = strrep(noteName,'_MA','mA'); %BUC
+    noteName = strrep(noteName,'MA','mA'); %BUC
+    noteName = strrep(noteName,'ma','mA'); %BUC
+    noteName = strrep(noteName,'HZ','Hz'); %BUC
+    noteName = strrep(noteName,'_Hz','Hz'); %BUC
     [numb,nIDX]= regexp(noteName,'\d*','Match');
     if strcmpi(patientCode(5:end),'YUQ') && numel(numb) >= 3
         if length(noteName) > nIDX(3)
@@ -131,6 +137,54 @@ rxp1  = '[-+]?(\d*[.])?\d+mA'; rxp2  = '[-+]?(\d*[.])?\d+Hz';
 rxp3  = '[-+]?(\d*[.])?\d+us'; rxp4  = '[-+]?(\d*[.])?\d+s'; % find available pulse duration values 
 rxp3bis  = '[-+]?(\d*[.])?\d+�s'; 
 
+buc_flag = 0;
+% BUC patients have amplitude that varies 
+if strcmpi(patientCode(5:end),'BUC')
+%     load('/gin/data/database/02-raw/stim_parameters-ftract-buc.mat','stim_params')
+    load('/Users/admin/Documents/Data/SEEG/F-TRACT/BUC/stim_parameters-ftract-buc.mat','stim_params')
+    Loc = find(ismember(stim_params.PCode, patientCode), 1);
+    if ~isempty(Loc)
+        buc_flag = 1;
+        Frq = stim_params.Freq{Loc};
+%         Amp = stim_params.Ampl{Loc};
+        Pul = stim_params.Pulse{Loc};
+        for n = 1:length(KeepEvent)
+            xsub1 = regexp(Notes{KeepEvent(n)},rxp1,'match');
+            xsub2 = regexp(Notes{KeepEvent(n)},rxp2,'match');
+            xsub3 = regexp(Notes{KeepEvent(n)},rxp3,'match');
+            
+%             if ~isempty(xsub1) % insert stim Amplitude
+%                 Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},xsub1,Amp));
+%             else
+%                 Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Amp];
+%             end
+%             
+%             if isempty(xsub1) % insert stim Amplitude
+%                 Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Amp];
+%             end
+            
+            if ~isempty(xsub2) % insert stim Frequency
+                Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},xsub2,Frq));
+            else
+                Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Frq];
+            end
+            
+            if ~isempty(xsub3) % insert stim Pulse
+                Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},xsub3,Pul));
+            else
+                Notes{KeepEvent(n)} = [Notes{KeepEvent(n)} '_' Pul];
+            end
+            Notes{KeepEvent(n)} = char(strrep(Notes{KeepEvent(n)},'_3_','_'));
+            evt(KeepEvent(n)).type = Notes{KeepEvent(n)};
+        end
+        D = events(D,1,evt);
+        D2 = clone(D, D.fnamedat, [D.nchannels D.nsamples D.ntrials]);
+        D2(:,:,:) = D(:,:,:);
+        save(D2);
+        fprintf('\n \n MESSAGE: .. %s parameters updated ..::\n',patientCode); 
+        %set_final_status('OK') 
+    end
+end
 mil_flag = 0;
 % MIL patients have stims parameters in stim_parameters file saved on /02-raw
 % that could be loaded 
@@ -205,7 +259,8 @@ if strcmpi(patientCode(5:end),'FRE')
     end
 end
 
-if mil_flag == 0 || fre_flag == 0
+
+if mil_flag == 0 || fre_flag == 0 || buc_flag == 0
     pVals = [];
     for k = 1:length(KeepEvent)
         xsub3 = regexp(Notes{KeepEvent(k)},rxp3,'match');
