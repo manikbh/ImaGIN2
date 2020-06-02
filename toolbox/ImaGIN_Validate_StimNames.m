@@ -140,8 +140,8 @@ rxp3bis  = '[-+]?(\d*[.])?\d+�s';
 buc_flag = 0;
 % BUC patients have amplitude that varies 
 if strcmpi(patientCode(5:end),'BUC')
-%     load('/gin/data/database/02-raw/stim_parameters-ftract-buc.mat','stim_params')
-    load('/Users/admin/Documents/Data/SEEG/F-TRACT/BUC/stim_parameters-ftract-buc.mat','stim_params')
+    load('/gin/data/database/02-raw/stim_parameters-ftract-buc.mat','stim_params')
+%     load('/Users/admin/Documents/Data/SEEG/F-TRACT/BUC/stim_parameters-ftract-buc.mat','stim_params')
     Loc = find(ismember(stim_params.PCode, patientCode), 1);
     if ~isempty(Loc)
         buc_flag = 1;
