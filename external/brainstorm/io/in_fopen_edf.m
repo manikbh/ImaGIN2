@@ -184,8 +184,8 @@ if hdr.interrupted
              'Brainstorm will read this file as a continuous file ("EDF+C"), the timing of the samples after the first discontinuity will be wrong.' 10 ...
              'This may not cause any major problem unless there are time markers in the file, they might be inaccurate in all the segments >= 2.']);
     end
-% else%OD
-%     hdr.fixinterrupted=1;
+else%OD
+    hdr.fixinterrupted=1;
 end
 
 
