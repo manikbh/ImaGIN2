@@ -100,11 +100,14 @@ for c=1:evsize % Navigate all available events
     end
 end
 for j=1:length(KeepEvent) % Navigate all stim events
-    noteName = strrep(char(Notes{KeepEvent(j)}), ' ','_');
+    noteName = char(Notes{KeepEvent(j)});
+    tmp=find(noteName==','); if ~isempty(tmp);if noteName(tmp(1)-3)=='-'; noteName(tmp(1))=' ';end;end%BUC
+    noteName = regexprep(noteName,',','.');%BUC
+    noteName = strrep(noteName, ' ','_');
     noteName = regexprep(noteName,'�','u'); %OD
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='';
     noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');    
-    noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_'); %some MIL notes
+    if strcmpi(patientCode(5:end),'MIL');noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_');end%some MIL notes
     noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',','');
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
     noteName = strrep(noteName,'Stim_Start_',''); noteName = strrep(noteName,'Stim_Stop_','');
