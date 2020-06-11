@@ -11,7 +11,8 @@ function ImaGIN_SpikesDetection(S)
     
     % Establish the channel mapping from monopolar to bipolar using a single stimulation file    
     mono_stimulation_file = fullfile(path_out,'single_stimulation');
-    mono_stimulation_obj = clone(spm_eeg_load(stims_files{1}),mono_stimulation_file); 
+    mono_stimulation_obj = clone(spm_eeg_load(stims_files{1}),mono_stimulation_file);
+    monopolar_sensors = sensors(mono_stimulation_obj,'EEG');
     Sbp.Fname = mono_stimulation_file;
     bp_stimulation_obj = ImaGIN_BipolarMontage(Sbp);   
     clear channels_map;
@@ -24,21 +25,25 @@ function ImaGIN_SpikesDetection(S)
         channels_map(cc).mono_chan2 = mono_chans{1}{2};        
         
         % Test if the channel label exists in the monopolar object, if not, add a '0' and try again.
-        chan1_idx = indchannel(mono_stimulation_obj,mono_chans{1}{1});
+        %chan1_idx = indchannel(mono_stimulation_obj,mono_chans{1}{1});
+        chan1_idx = find(strcmp(monopolar_sensors.label,mono_chans{1}{1}));        
         if numel(chan1_idx) == 0
             old_name = mono_chans{1}{1};
             match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
             new_name = [match.letters '0' match.digits];
             channels_map(cc).mono_chan1 = new_name;
-            chan1_idx = indchannel(mono_stimulation_obj,new_name);
+            %chan1_idx = indchannel(mono_stimulation_obj,new_name); 
+            chan1_idx = find(strcmp(monopolar_sensors.label,new_name)); 
         end       
-        chan2_idx = indchannel(mono_stimulation_obj,mono_chans{1}{2});
+        %chan2_idx = indchannel(mono_stimulation_obj,mono_chans{1}{2});
+        chan2_idx = find(strcmp(monopolar_sensors.label,mono_chans{1}{2}));  
         if numel(chan2_idx) == 0
             old_name = mono_chans{1}{2};
             match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
             new_name = [match.letters '0' match.digits];
             channels_map(cc).mono_chan2 = new_name;
-            chan2_idx = indchannel(mono_stimulation_obj,new_name);
+            %chan2_idx = indchannel(mono_stimulation_obj,new_name);
+            chan2_idx = find(strcmp(monopolar_sensors.label,new_name));
         end  
         
         % Test and correct for duplicated labels in the monopolar object
@@ -47,11 +52,9 @@ function ImaGIN_SpikesDetection(S)
         elseif numel(chan1_idx) == 1 % If 1 match, as expected, do nothing
             %pass
         elseif numel(chan1_idx) == 2 % If 2 matches, find and eliminate the channel without coordinates AND flagged as badchannel (scalp measurement)
-            monopolar_sensors = sensors(mono_stimulation_obj,'EEG');            
             chan1_matching = [sum(badchannels(mono_stimulation_obj) == chan1_idx(1)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan1_idx(1),:))) == 3,...
                 sum(badchannels(mono_stimulation_obj) == chan1_idx(2)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan1_idx(2),:))) == 3]; % [0,1] or [1,0]
             chan1_idx = chan1_idx(~chan1_matching(:));
-            clear monopolar_sensors;
         else
             error('3 or more channels with the same label')        
         end
@@ -61,19 +64,21 @@ function ImaGIN_SpikesDetection(S)
         elseif numel(chan2_idx) == 1
             %pass
         elseif numel(chan2_idx) == 2
-            monopolar_sensors = sensors(mono_stimulation_obj,'EEG');            
             chan2_matching = [sum(badchannels(mono_stimulation_obj) == chan2_idx(1)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan2_idx(1),:))) == 3,...
                 sum(badchannels(mono_stimulation_obj) == chan2_idx(2)) == 1 & sum(isnan(monopolar_sensors.elecpos(chan2_idx(2),:))) == 3];            
             chan2_idx = chan2_idx(~chan2_matching(:));
-            clear monopolar_sensors;
         else
             error('3 or more channels with the same label')        
         end     
         
-        channels_map(cc).mono_idx1 = chan1_idx;
-        channels_map(cc).mono_idx2 = chan2_idx;
+        if (chan2_idx - chan1_idx) ~= 1
+            error('Found non-consecutive channels.')            
+        else       
+            channels_map(cc).mono_idx1 = chan1_idx;
+            channels_map(cc).mono_idx2 = chan2_idx;
+        end
     end
-    clear mono_stimulation_obj bp_stimulation_obj; 
+    clear mono_stimulation_obj bp_stimulation_obj monopolar_sensors; 
     
     % Extract baselines: get the pre-stimulation period for each stimulation and concatenate them for each channel.
     concat_baselines = []; % Store timeseries
