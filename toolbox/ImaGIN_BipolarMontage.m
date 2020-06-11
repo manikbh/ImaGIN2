@@ -59,23 +59,32 @@ for i0=1:size(Filename,1)
     if isempty(bipole)
         Cpos2full=[];
         Cnamesfull={};
-        bipole=[];
-        for i1=1:length(Name)-1
-            tmp1=Name{i1}(1:min([findstr(Name{i1},'0') findstr(Name{i1},'1') findstr(Name{i1},'2') findstr(Name{i1},'3') findstr(Name{i1},'4') findstr(Name{i1},'5') findstr(Name{i1},'6') findstr(Name{i1},'7') findstr(Name{i1},'8') findstr(Name{i1},'9')])-1);
-            tmp2=Name{i1+1}(1:min([findstr(Name{i1+1},'0') findstr(Name{i1+1},'1') findstr(Name{i1+1},'2') findstr(Name{i1+1},'3') findstr(Name{i1+1},'4') findstr(Name{i1+1},'5') findstr(Name{i1+1},'6') findstr(Name{i1+1},'7') findstr(Name{i1+1},'8') findstr(Name{i1+1},'9')])-1);
-            tmp3=str2num(Name{i1}(min([findstr(Name{i1},'0') findstr(Name{i1},'1') findstr(Name{i1},'2') findstr(Name{i1},'3') findstr(Name{i1},'4') findstr(Name{i1},'5') findstr(Name{i1},'6') findstr(Name{i1},'7') findstr(Name{i1},'8') findstr(Name{i1},'9')]):end));
-            tmp4=str2num(Name{i1+1}(min([findstr(Name{i1+1},'0') findstr(Name{i1+1},'1') findstr(Name{i1+1},'2') findstr(Name{i1+1},'3') findstr(Name{i1+1},'4') findstr(Name{i1+1},'5') findstr(Name{i1+1},'6') findstr(Name{i1+1},'7') findstr(Name{i1+1},'8') findstr(Name{i1+1},'9')]):end));
-            if strcmp(tmp1,tmp2)&tmp3+1==tmp4
-                Cpos2full(:,end+1)=mean(Position([i1 i1+1],:))';
-                Cnamesfull{1,end+1}=[Name{i1} '-' Name{i1+1}];
-                bipole=[bipole [i1+1;i1]];
-            end          
+        bipole=[];       
+        for i1=1:numel(Name)
+            matched_1 = regexp(Name{i1},'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
+            label_name_1 = matched_1.letters;
+            label_number_1 = matched_1.digits;
+            matched_channels = 0;
+            for i2=1:numel(Name)        
+                matched_2 = regexp(Name{i2},'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
+                label_name_2 = matched_2.letters;
+                label_number_2 = matched_2.digits;       
+                if strcmp(label_name_1,label_name_2) & str2num(label_number_1)+1 == str2num(label_number_2) & ~(sum(isnan(Position(i1,:))) > 0) & ~(sum(isnan(Position(i2,:))) > 0)
+                    matched_channels = matched_channels+1;
+                    Cpos2full(:,end+1)= mean(Position([i1 i2],:))';
+                    Cnamesfull{1,end+1}=[Name{i1} '-' Name{i2}];
+                    bipole =[bipole [i2;i1]];
+                end        
+            end
+            if matched_channels > 1
+                error('Multiple monopolar channels with the same label found.')
+            end
         end
         if strcmp(Name{end},'ecg')
-            Cpos2full(:,end+1)=mean(Position(end,:),1)';
-            Cnamesfull{1,end+1}=Name{end};
-            bipole=[bipole [length(Name);length(Name)]];
-        end
+            Cpos2full(:,end+1) = mean(Position(end,:),1)';
+            Cnamesfull{1,end+1} = Name{end};
+            bipole =[bipole [length(Name);length(Name)]];
+        end       
     else
         bipole=bipole';
         Cpos2full=zeros(3,size(bipole,2));
