@@ -28,9 +28,9 @@ function ImaGIN_SpikesDetection(S)
         %chan1_idx = indchannel(mono_stimulation_obj,mono_chans{1}{1});
         chan1_idx = find(strcmp(monopolar_sensors.label,mono_chans{1}{1}));        
         if numel(chan1_idx) == 0
-            old_name = mono_chans{1}{1};
-            match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
-            new_name = [match.letters '0' match.digits];
+            old_name = mono_chans{1}{1};  
+            match = regexp(old_name,'^(?<label>.*?)(?<index>[0-9]+)$','once','names');
+            new_name = [match.label '0' match.index];
             channels_map(cc).mono_chan1 = new_name;
             %chan1_idx = indchannel(mono_stimulation_obj,new_name); 
             chan1_idx = find(strcmp(monopolar_sensors.label,new_name)); 
@@ -39,8 +39,8 @@ function ImaGIN_SpikesDetection(S)
         chan2_idx = find(strcmp(monopolar_sensors.label,mono_chans{1}{2}));  
         if numel(chan2_idx) == 0
             old_name = mono_chans{1}{2};
-            match = regexp(old_name,'^(?<letters>[a-zA-Z]+)(?<digits>[0-9]+)$','once','names');
-            new_name = [match.letters '0' match.digits];
+            match = regexp(old_name,'^(?<label>.*?)(?<index>[0-9]+)$','once','names');
+            new_name = [match.label '0' match.index];
             channels_map(cc).mono_chan2 = new_name;
             %chan2_idx = indchannel(mono_stimulation_obj,new_name);
             chan2_idx = find(strcmp(monopolar_sensors.label,new_name));
