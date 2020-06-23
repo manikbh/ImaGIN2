@@ -74,6 +74,9 @@ function ImaGIN_SpikesDetection(S)
         empty_series = find(series_length == 0);        
         nonempty_series = find(series_length);        
         valid_length = series_length(nonempty_series);        
+        if isempty(valid_length) % If valid_length is empty that means there are no extracted baselines in any channels for this stimulation (baseline is too short).
+            valid_length = 1; 
+        end
         if all(valid_length == valid_length(1))            
             for ee=1:numel(empty_series)
                 channels.(global_montage{empty_series(ee)}).timeserie{ff,:} = zeros(1,valid_length(1));
@@ -89,8 +92,17 @@ function ImaGIN_SpikesDetection(S)
     for nn=1:numel(global_montage)
         channel{nn} = global_montage{nn};
         timeseries(nn,:) =  [channels.(global_montage{nn}).timeserie{:}];
-        zeroed(nn,:) =  [channels.(global_montage{nn}).zeroed{:}];
-        coordinates(nn,:) = channels.(global_montage{nn}).coordinates{1,:};
+        zeroed(nn,:) =  [channels.(global_montage{nn}).zeroed{:}];  
+        all_coordinates = cell2mat(channels.(global_montage{nn}).coordinates(:));
+        [lines cols] = find(~isnan(all_coordinates));        
+        coordinates_with_values = all_coordinates(unique(lines),:);           
+        if isempty(coordinates_with_values)
+            coordinates(nn,:) = NaN(1,3);  
+        elseif sum(all(coordinates_with_values == coordinates_with_values(1,:))) == 3  
+            coordinates(nn,:) = coordinates_with_values(1,:);
+        else
+            error('Inconsistent electrodes coordinates between cropped files.');
+        end  
     end   
     % Create the new sensor
     new_sensors_info.balance.current = 'none';
