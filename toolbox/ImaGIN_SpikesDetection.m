@@ -2,8 +2,8 @@ function ImaGIN_SpikesDetection(S)
 % This function extracts and concatenates the baselines from cropped, qualitatively controlled, stimulation files.
 % It runs Delphos' spike detection on extracted baselines after bipolar montage computation.
 % It then computes corrected spike rates for each bipolar recording channel.
-% /!\ Cropped files CAN have a variable number of channels and thus the monopolar <-> bipolar mapping has to be established for each cropped file
-% and taken into account during baseline concatenation for consistency. /!\
+% /!\ Cropped files CAN have a variable number of channels AND different sampling rates, the monopolar <-> bipolar mapping has to be established for each cropped file
+% and taken into account during baseline concatenation for consistency AND cropped files with the same sampling rate have to be concatenated together. /!\
 
     %% Vars parsing
     stims_files = S.stims_files;
@@ -88,107 +88,57 @@ function ImaGIN_SpikesDetection(S)
         end    
     end   
     
-    %% Create the new monopolar baseline object
-    for nn=1:numel(global_montage)
-        channel{nn} = global_montage{nn};
-        timeseries(nn,:) =  [channels.(global_montage{nn}).timeserie{:}];
-        zeroed(nn,:) =  [channels.(global_montage{nn}).zeroed{:}];  
-        all_coordinates = cell2mat(channels.(global_montage{nn}).coordinates(:));
-        [lines cols] = find(~isnan(all_coordinates));        
-        coordinates_with_values = all_coordinates(unique(lines),:);           
-        if isempty(coordinates_with_values)
-            coordinates(nn,:) = NaN(1,3);  
-        elseif sum(all(coordinates_with_values == coordinates_with_values(1,:))) == 3  
-            coordinates(nn,:) = coordinates_with_values(1,:);
+    %% Create monopolar baseline objects
+    unique_srates = unique(sampling);
+    
+    for ss=1:numel(unique_srates) 
+        clear srate labels timeseries zeroed coordinates; 
+        srate = unique_srates(ss);
+        for nn=1:numel(global_montage)
+            labels{nn} = global_montage{nn};
+            timeseries(nn,:) =  [channels.(global_montage{nn}).timeserie{find(sampling==srate)}];
+            zeroed(nn,:) =  [channels.(global_montage{nn}).zeroed{find(sampling==srate)}];         
+            all_coordinates = cell2mat(channels.(global_montage{nn}).coordinates(:));
+            [lines cols] = find(~isnan(all_coordinates));        
+            coordinates_with_values = all_coordinates(unique(lines),:);           
+            if isempty(coordinates_with_values)
+                coordinates(nn,:) = NaN(1,3);  
+            elseif sum(all(coordinates_with_values == coordinates_with_values(1,:))) == 3  
+                coordinates(nn,:) = coordinates_with_values(1,:);
+            else
+                error('Inconsistent electrodes coordinates between cropped files.');
+            end 
+        end        
+        rates_tables{ss} = spikes_from_monopolar(srate,labels,timeseries,zeroed,coordinates,path_out);       
+    end 
+    
+    rates_labels = {};
+    rates_scores = [];
+    for rr=1:numel(rates_tables)  
+        rates_labels = [rates_labels rates_tables{rr}{:,1}];        
+        current_rates = rates_tables{rr}{:,2};
+        current_rates(isinf(current_rates)) = NaN;        
+        rates_scores = [rates_scores current_rates];
+    end
+    
+    for ll=1:size(rates_labels,1)
+        if all(strcmp(rates_labels(ll,:),rates_labels{ll,1})==1)
+            bipolar_labels{ll} = rates_labels{ll,1};
         else
-            error('Inconsistent electrodes coordinates between cropped files.');
-        end  
-    end   
-    % Create the new sensor
-    new_sensors_info.balance.current = 'none';
-    new_sensors_info.chanpos = coordinates;
-    new_sensors_info.chantype = cell(1,numel(global_montage)); new_sensors_info.chantype(:) = {'eeg'};
-    new_sensors_info.chanunit = cell(1,numel(global_montage)); new_sensors_info.chanunit(:) = {'V'};
-    new_sensors_info.elecpos = coordinates;
-    new_sensors_info.label = channel;
-    new_sensors_info.type = 'ctf';
-    new_sensors_info.unit = 'mm';
-    % Create the new files 
-    file_header = fullfile(path_out,'monopolar_baseline.mat');
-    file_data = fullfile(path_out,'monopolar_baseline.dat');    
-    if exist(file_header, 'file') == 2
-     delete(file_header);      
-    end
-    if exist(file_data, 'file') == 2
-     delete(file_data);          
-    end   
-    % Create the new object    
-    D = meeg(size(timeseries,1),size(timeseries,2),1);
-    D = fname(D,'monopolar_baseline');
-    D = path(D,path_out);
-    if all(sampling == sampling(1))
-        D = fsample(D,sampling(1));
-    else
-        error('Inconsistent sampling frequency across cropped files.');
-    end
-    D = sensors(D,'EEG',new_sensors_info)    
-    D = blank(D) ;
-    D = link(D,file_data);   
-    D(:,:,1) = timeseries;   
-    save(D);    
-    
-    %% Compute bipolar montage on baseline object to get the bipolar baseline object
-    Sbp.Fname = file_header;
-    Sbp.FileOut = fullfile(path_out,'bipolar_baseline');
-    bp_baseline_obj = ImaGIN_BipolarMontage(Sbp);     
-    global_mapping = monopolar_to_bipolar_mapping(Sbp.Fname,path_out);
-
-    % Estimate bipolar boolean matrix from monopolar boolean matrix   
-    bp_concat_zeroed = zeros(size(bp_baseline_obj));
-    for cc=1:numel(global_mapping)  
-        both_good = (zeroed(global_mapping(cc).mono_idx1,:,1) & zeroed(global_mapping(cc).mono_idx2,:,1)); 
-        bp_concat_zeroed(cc,find(both_good)) = ones(1,numel(find(both_good))); 
-    end
-    
-    % Run Delphos' spike detection on baselines
-    fs = bp_baseline_obj.fsample; 
-    results = Delphos_detector(bp_baseline_obj,chanlabels(bp_baseline_obj),'SEEG',fs,{'Spk'},[],[],40,[]);
-
-    % Calculate and store corrected spike rates in a table
-    total_samples = nsamples(bp_baseline_obj);
-    total_times = [];    
-    for cc=1:nchannels(bp_baseline_obj)
-        zeroed_samples = numel(find(~bp_concat_zeroed(cc,:,1)));      
-        total_times(cc) = (total_samples - zeroed_samples) /fs/60; % Total recording time in minutes
-    end
-    chans = [results.labels]';
-    rates = round(results.n_Spk./total_times',1); % Round to nearest decimal
-    rates_table  = table(chans,rates);
-
-    % Store spike features in a table
-    spks_positions = [results.markers.position]';
-    spks_type = {results.markers.label}';
-    spks_channels = {results.markers.channels}';
-    spks_values = {results.markers.value}';
-    spks_table = table(spks_channels,spks_type,spks_positions,spks_values);
-
-    % Store all tables in a .mat
-    [~,bname,~] = fileparts(bp_baseline_obj.fname);
-    spkFileName = ['Results_' bname '.mat'];
-    spkFile.spikeRate = rates_table;
-    spkFile.markers   = spks_table;
-    spkFile.baseline  = ['Total duration of ' num2str((nsamples(bp_baseline_obj)/fsample(bp_baseline_obj))/60)  ' minutes'];
-    spkFile.comment   = 'Spike rate is number of spikes per minute whithin a bipolar channel';
-    save(fullfile(path_out,spkFileName), 'spkFile');
+            error('Inconsistent labels between bipolar baselines');
+        end
+    end          
+    mean_rates = mean(rates_scores,2,'omitnan');
     
     % Store rate table in an individual files for easy extraction
     rate_table_file = 'SPK_bBaseline_rates.mat';
-    spike_rates = [chans,num2cell(rates)];
+    spike_rates = [bipolar_labels',num2cell(mean_rates)];
     save(fullfile(path_out,rate_table_file), 'spike_rates');
     
     % Ending step
     set_final_status('OK');
-    disp('Done');
+    disp('Done');    
+
 end
 
 function channels_map = monopolar_to_bipolar_mapping(monopolar_file,path_out)
@@ -228,4 +178,83 @@ function channels_map = monopolar_to_bipolar_mapping(monopolar_file,path_out)
         channels_map(cc).mono_idx2 = chan2_idx;        
     end    
     delete([Sbp.FileOut '.mat']);delete([Sbp.FileOut '.dat']);delete([Sbp.FileOut '_log.txt']); 
+end
+
+function rates_table = spikes_from_monopolar(srate,labels,timeseries,zeroed,coordinates,path_out)    
+    
+    % Create the new sensor
+    new_sensors_info.balance.current = 'none';
+    new_sensors_info.chanpos = coordinates;
+    new_sensors_info.chantype = cell(1,numel(labels)); new_sensors_info.chantype(:) = {'eeg'};
+    new_sensors_info.chanunit = cell(1,numel(labels)); new_sensors_info.chanunit(:) = {'V'};
+    new_sensors_info.elecpos = coordinates;
+    new_sensors_info.label = labels;
+    new_sensors_info.type = 'ctf';
+    new_sensors_info.unit = 'mm';
+    
+    % Create the new files 
+    file_header = fullfile(path_out,['monopolar_baseline_' num2str(srate) 'Hz.mat']);
+    file_data = fullfile(path_out,['monopolar_baseline_' num2str(srate) 'Hz.dat']);    
+    if exist(file_header, 'file') == 2
+     delete(file_header);      
+    end
+    if exist(file_data, 'file') == 2
+     delete(file_data);          
+    end   
+    
+    % Create the new object    
+    D = meeg(size(timeseries,1),size(timeseries,2),1);
+    D = fname(D,['monopolar_baseline_' num2str(srate) 'Hz']);
+    D = path(D,path_out);
+    D = fsample(D,srate); 
+    D = sensors(D,'EEG',new_sensors_info)    
+    D = blank(D) ;
+    D = link(D,file_data);   
+    D(:,:,1) = timeseries;   
+    save(D);
+
+    %% Compute bipolar montage on baseline object to get the bipolar baseline object
+    Sbp.Fname = file_header;
+    Sbp.FileOut = fullfile(path_out,['bipolar_baseline_' num2str(srate) 'Hz']);
+    bp_baseline_obj = ImaGIN_BipolarMontage(Sbp);     
+    global_mapping = monopolar_to_bipolar_mapping(Sbp.Fname,path_out);
+
+    % Estimate bipolar boolean matrix from monopolar boolean matrix   
+    bp_concat_zeroed = zeros(size(bp_baseline_obj));
+    for cc=1:numel(global_mapping)  
+        both_good = (zeroed(global_mapping(cc).mono_idx1,:,1) & zeroed(global_mapping(cc).mono_idx2,:,1)); 
+        bp_concat_zeroed(cc,find(both_good)) = ones(1,numel(find(both_good))); 
+    end
+    
+    % Run Delphos' spike detection on baselines
+    fs = bp_baseline_obj.fsample; 
+    results = Delphos_detector(bp_baseline_obj,chanlabels(bp_baseline_obj),'SEEG',fs,{'Spk'},[],[],40,[]);
+
+    % Calculate and store corrected spike rates in a table
+    total_samples = nsamples(bp_baseline_obj);
+    total_times = [];    
+    for cc=1:nchannels(bp_baseline_obj)
+        zeroed_samples = numel(find(~bp_concat_zeroed(cc,:,1)));      
+        total_times(cc) = (total_samples - zeroed_samples) /fs/60; % Total recording time in minutes
+    end
+    chans = [results.labels]';
+    rates = round(results.n_Spk./total_times',1); % Round to nearest decimal
+    rates_table  = table(chans,rates);
+
+    % Store spike features in a table
+    spks_positions = [results.markers.position]';
+    spks_type = {results.markers.label}';
+    spks_channels = {results.markers.channels}';
+    spks_values = {results.markers.value}';
+    spks_table = table(spks_channels,spks_type,spks_positions,spks_values);
+
+    % Store all tables in a .mat
+    [~,bname,~] = fileparts(bp_baseline_obj.fname);
+    spkFileName = ['Results_' bname '.mat'];
+    spkFile.spikeRate = rates_table;
+    spkFile.markers   = spks_table;
+    spkFile.baseline  = ['Total duration of ' num2str((nsamples(bp_baseline_obj)/fsample(bp_baseline_obj))/60)  ' minutes'];
+    spkFile.comment   = 'Spike rate is number of spikes per minute whithin a bipolar channel';
+    results_file = fullfile(path_out,spkFileName);
+    save(results_file, 'spkFile');
 end
