@@ -102,8 +102,8 @@ function ImaGIN_SpikesDetection(S)
             [lines cols] = find(~isnan(all_coordinates));        
             coordinates_with_values = all_coordinates(unique(lines),:);           
             if isempty(coordinates_with_values)
-                coordinates(nn,:) = NaN(1,3);  
-            elseif sum(all(coordinates_with_values == coordinates_with_values(1,:))) == 3  
+                coordinates(nn,:) = NaN(1,3);           
+            elseif sum([range(coordinates_with_values(:,1)) == 0, range(coordinates_with_values(:,2)) == 0, range(coordinates_with_values(:,3)) == 0]) == 3  
                 coordinates(nn,:) = coordinates_with_values(1,:);
             else
                 error('Inconsistent electrodes coordinates between cropped files.');
@@ -122,7 +122,7 @@ function ImaGIN_SpikesDetection(S)
     end
     
     for ll=1:size(rates_labels,1)
-        if all(strcmp(rates_labels(ll,:),rates_labels{ll,1})==1)
+        if all(strcmp(rates_labels(ll,:),rates_labels{ll,1}))
             bipolar_labels{ll} = rates_labels{ll,1};
         else
             error('Inconsistent labels between bipolar baselines');
