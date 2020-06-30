@@ -62,11 +62,17 @@ for i0=1:size(Filename,1)
         bipole=[];       
         for i1=1:numel(Name)
             matched_1 = regexp(Name{i1},'^(?<label>.*?)(?<index>[0-9]+)$','once','names');
+            if isempty(matched_1)
+                continue
+            end            
             label_name_1 = matched_1.label;
             label_number_1 = matched_1.index;
             matched_channels = 0;
             for i2=1:numel(Name)        
                 matched_2 = regexp(Name{i2},'^(?<label>.*?)(?<index>[0-9]+)$','once','names');
+                if isempty(matched_2)
+                    continue
+                end                 
                 label_name_2 = matched_2.label;
                 label_number_2 = matched_2.index;       
                 if strcmp(label_name_1,label_name_2) & str2num(label_number_1)+1 == str2num(label_number_2) & ~(sum(isnan(Position(i1,:))) > 0) & ~(sum(isnan(Position(i2,:))) > 0)
