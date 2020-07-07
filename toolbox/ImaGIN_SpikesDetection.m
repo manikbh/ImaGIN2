@@ -50,9 +50,11 @@ function ImaGIN_SpikesDetection(S)
         eeg_chans_idxes = indchantype(D,'EEG');
         for cc=1:numel(eeg_chans_idxes)
             channel_name = chanlabels(D,eeg_chans_idxes(cc));
-            channels.(channel_name{:}).timeserie{ff,:} = file_baselines(eeg_chans_idxes(cc),:,:);  
-            channels.(channel_name{:}).zeroed{ff,:} = file_zeroed(eeg_chans_idxes(cc),:,:);            
-            channels.(channel_name{:}).coordinates{ff,:} = sensors_info.elecpos(find(strcmp(channel_name,sensors_info.label)),:);            
+            if isvarname(channel_name{:})          
+                channels.(channel_name{:}).timeserie{ff,:} = file_baselines(eeg_chans_idxes(cc),:,:);  
+                channels.(channel_name{:}).zeroed{ff,:} = file_zeroed(eeg_chans_idxes(cc),:,:);            
+                channels.(channel_name{:}).coordinates{ff,:} = sensors_info.elecpos(find(strcmp(channel_name,sensors_info.label)),:);  
+            end
         end
         % Tidy the channels struct with empty inputs for consistency
         temp_montage = fieldnames(channels);

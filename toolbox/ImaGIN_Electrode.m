@@ -139,12 +139,26 @@ for i0 = 1:size(t,1)
         % If the channel was already found in the list before: check the best option based on the case
         if ~isempty(iChanPos) && ~isempty(chMatchLog)
             iPrevious = find(strcmp(Name{iChanPos}, chMatchLog(:,2)));
-            if ~isempty(iPrevious)
+            if ~isempty(iPrevious) 
                 % If the new channel has strictly the same case, or if it corresponds to a replaced "prime": remove the previous match
                 if isequal(Sensors.label{i1}, Name{iChanPos}) || ...
                    (any(Sensors.label{i1} == '''') && strcmp(strrep(upper(Sensors.label{i1}), '''', 'p'), Name{iChanPos}))
-                    disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} 'discarded.']);
-                    chMatchLog(iPrevious,:) = [];
+                    disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} ' discarded.']);
+                    chMatchLog(iPrevious,:) = [];                
+                % If both labels are the same regardless of the case, pick the one with uppercase (intra-recording).
+                elseif strcmpi(chMatchLog{iPrevious,1},Sensors.label{i1})
+                    uppercase_label = find([sum(isstrprop(chMatchLog{iPrevious,1},'upper'))>0 sum(isstrprop(Sensors.label{i1},'upper'))>0]);
+                    if numel(uppercase_label) == 1
+                        disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} ' discarded.']);
+                        % Rename the scalp electrode and remove the coordinates                         
+                        scalp_idx = find(strcmp(SpmMat.D.sensors.eeg.label,chMatchLog{iPrevious,1}));
+                        Sensors.elecpos(scalp_idx,:) = nan(1,3);
+                        Sensors.chanpos(scalp_idx,:) = nan(1,3);
+                        Sensors.label{scalp_idx} = ['SCALP' Sensors.label{scalp_idx}];                        
+                        chMatchLog(iPrevious,:) = [];                        
+                    else
+                        error(['Duplicated label found: ' Sensors.label{i1}]);
+                    end                    
                 else
                     disp(['ImaGIN> WARNING: Channel name conflict: ' chMatchLog{iPrevious,1} ' matched with ' Name{iChanPos} ', ' Sensors.label{i1} ' discarded.']);
                     iChanPos = [];
