@@ -261,9 +261,33 @@ if strcmpi(patientCode(5:end),'FRE')
         fprintf('\n \n MESSAGE: .. %s parameters updated ..::\n',patientCode); 
     end
 end
+val_flag = 0;
+if strcmpi(patientCode(5:end),'VAL')
+    load('/gin/data/database/02-raw/stim_parameters-ftract-val.mat','stim_params')
+    Loc = find(ismember(stim_params.PCode, patientCode), 1);
+    if ~isempty(Loc)
+        fre_flag = 1;
+        Frq = stim_params.Freq{Loc};
+        Amp = stim_params.Ampl{Loc};
+        Pul = stim_params.Pulse{Loc};
+        for n = 1:length(KeepEvent)
+            undsc = strfind(Notes{KeepEvent(n)},'_');         
+            if ~isempty(undsc) 
+                Notes{KeepEvent(n)} = strcat(Notes{KeepEvent(n)}(1:undsc(1)),Amp,'_',Frq,'_',Pul);
+            end
+            Notes{KeepEvent(n)} = char(Notes{KeepEvent(n)});
+            evt(KeepEvent(n)).type = Notes{KeepEvent(n)};
+        end
+        D = events(D,1,evt);
+        D2 = clone(D, D.fnamedat, [D.nchannels D.nsamples D.ntrials]);
+        D2(:,:,:) = D(:,:,:);
+        save(D2);
+        fprintf('\n \n MESSAGE: .. %s parameters updated ..::\n',patientCode); 
+    end
+end
 
 
-if mil_flag == 0 || fre_flag == 0 || buc_flag == 0
+if mil_flag == 0 || fre_flag == 0 || buc_flag == 0 || val_flag == 0
     pVals = [];
     for k = 1:length(KeepEvent)
         xsub3 = regexp(Notes{KeepEvent(k)},rxp3,'match');
