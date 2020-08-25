@@ -369,8 +369,16 @@ for c = 1:length(KeepEvent) % Navigate all stim events
             xsub2 = cellstr(xsub2);
             S.StimFreq = 1;
             StimFreq = 1;
-        else
-            StimFreq=str2double(xsub2{1}(1:end-2));
+        else           
+            % We assume a leading 0 implies a stimulation frequency <1 (e.g. 026 -> 0.26).
+            % Only used for the detection of stimulations (ImaGIN_StimDetect.m) Boyer.A 25/08/2020
+            freq_string = xsub2{1}(1:end-2);
+            match_freq = regexp(freq_string,'^0+(?<value>[0-9]+)$','once','names');
+            if ~isempty(match_freq)
+                StimFreq=str2double(['0.' match_freq.value]);
+            else
+                StimFreq=str2double(freq_string);
+            end            
             S.StimFreq = StimFreq;
         end
         xsub3 = regexp(noteName,rxp3,'match');

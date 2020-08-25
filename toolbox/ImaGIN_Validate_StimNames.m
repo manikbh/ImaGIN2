@@ -108,7 +108,8 @@ for j=1:length(KeepEvent) % Navigate all stim events
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='';
     noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');    
     if strcmpi(patientCode(5:end),'MIL');noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_');end%some MIL notes
-    noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',','');
+    if strcmpi(patientCode(5:end),'REN');noteName = strrep(noteName,'.0','');end%some REN notes    
+    noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',',''); % /!\ float value becomes integer /!\
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
     noteName = strrep(noteName,'Stim_Start_',''); noteName = strrep(noteName,'Stim_Stop_','');
     noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim','');
