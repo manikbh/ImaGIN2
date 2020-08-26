@@ -145,20 +145,9 @@ for i0 = 1:size(t,1)
                    (any(Sensors.label{i1} == '''') && strcmp(strrep(upper(Sensors.label{i1}), '''', 'p'), Name{iChanPos}))
                     disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} ' discarded.']);
                     chMatchLog(iPrevious,:) = [];                
-                % If both labels are the same regardless of the case, pick the one with uppercase (intra-recording).
+                % If both labels are the same regardless of the case, raises an error.
                 elseif strcmpi(chMatchLog{iPrevious,1},Sensors.label{i1})
-                    uppercase_label = find([sum(isstrprop(chMatchLog{iPrevious,1},'upper'))>0 sum(isstrprop(Sensors.label{i1},'upper'))>0]);
-                    if numel(uppercase_label) == 1
-                        disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} ' discarded.']);
-                        % Rename the scalp electrode and remove the coordinates                         
-                        scalp_idx = find(strcmp(SpmMat.D.sensors.eeg.label,chMatchLog{iPrevious,1}));
-                        Sensors.elecpos(scalp_idx,:) = nan(1,3);
-                        Sensors.chanpos(scalp_idx,:) = nan(1,3);
-                        Sensors.label{scalp_idx} = ['SCALP' Sensors.label{scalp_idx}];                        
-                        chMatchLog(iPrevious,:) = [];                        
-                    else
-                        error(['Duplicated label found: ' Sensors.label{i1}]);
-                    end                    
+                    error(['Duplicated label found: ' Sensors.label{i1}]);                                        
                 else
                     disp(['ImaGIN> WARNING: Channel name conflict: ' chMatchLog{iPrevious,1} ' matched with ' Name{iChanPos} ', ' Sensors.label{i1} ' discarded.']);
                     iChanPos = [];

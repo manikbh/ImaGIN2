@@ -178,7 +178,11 @@ for i = 1:length(AllNames)
         continue;
     elseif isSEEG && ismember(lower(AllNames{i}), {'o1','o2'}) && ~any(ismember({'o3','o4','o4','o5','o6','o7','o8','o9','o10','o11','o12','o13','o14','o15','o16','o17','o18'}, lower(AllNames)))
         continue;
-    % Otherwise: accept
+    elseif isSEEG && ismember(lower(AllNames{i}), {'c3','p3','c4','p4'}) && numel(find(ismember(lower(AllNames),lower(AllNames(i)))))>1 && is_scalp(i,AllNames,AllTags)
+        disp(['Excluding: ' AllNames{i} ' -> detected as a SCALP channel.']);
+        continue; % if c3 exists more than once AND is NOT preceded by c2 OR c5, is considered a scalp channel and will not be selected. Same for p3, c4, p4.
+        
+        % Otherwise: accept
     else
         iSel(end+1) = i;
     end
@@ -201,3 +205,21 @@ iSel = [iSel(iOrderSel), iEcg];
 % Return lists of selected channels and electrode names
 chTags = AllTags;
 chInd = AllInd;
+end
+
+function scalp_bool = is_scalp(i,AllNames,AllTags)
+    %% For a given (duplicated) label X, checks if X2 OR X5 exist. If not, is considered as a scalp label. 
+    duplicate_label_idxs = find(ismember(lower(AllNames),lower(AllNames(i)))); % List of duplicates
+    current_duplicate_idx = find(duplicate_label_idxs == i); % Duplicate being evaluated (infers i is always a duplicate index when this function is called) 
+    if current_duplicate_idx == numel(duplicate_label_idxs) % Last duplicate in the duplicate_label_idxs list
+        upper_range = i+1:numel(AllNames);
+    else
+        upper_range = i+1:duplicate_label_idxs(current_duplicate_idx+1);
+    end    
+    if current_duplicate_idx == 1 % First duplicate in the duplicate_label_idxs list
+        lower_range = 1:i-1;
+    else
+        lower_range = duplicate_label_idxs(current_duplicate_idx-1):i-1;
+    end 
+    scalp_bool = ~(ismember(lower([AllTags{i} '2']),lower(AllNames(lower_range))) || ismember(lower([AllTags{i} '5']),lower(AllNames(upper_range))));
+end
