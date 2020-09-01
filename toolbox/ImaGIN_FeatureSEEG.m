@@ -63,7 +63,7 @@ lpf_nFile = [pth '/lpf_nnn' strInterp fName];
 delete([nnnFile,'.*'])
 
 D = spm_eeg_load(lpf_nFile);
-sens= indchantype(D,'eeg');
+sens= indchantype(D,{'eeg','seeg'});
 elec= sensors(D,'eeg');
 pos = elec.elecpos; 
 nx  = size(sens,2);
