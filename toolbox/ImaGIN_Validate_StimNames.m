@@ -101,7 +101,12 @@ for c=1:evsize % Navigate all available events
 end
 for j=1:length(KeepEvent) % Navigate all stim events
     noteName = char(Notes{KeepEvent(j)});
-    tmp=find(noteName==','); if ~isempty(tmp);if noteName(tmp(1)-3)=='-'; noteName(tmp(1))=' ';end;end%BUC
+    tmp=find(noteName==',');
+    if ~isempty(tmp) && strcmpi(patientCode(5:end),'BUC')
+        if noteName(tmp(1)-3)=='-';
+            noteName(tmp(1))=' ';
+        end
+    end%BUC     
     noteName = regexprep(noteName,',','.');%BUC
     noteName = strrep(noteName, ' ','_');
     noteName = regexprep(noteName,'�','u'); %OD
