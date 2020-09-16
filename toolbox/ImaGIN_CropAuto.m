@@ -492,10 +492,18 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
         iChanMatch1 = find(strcmpi(tmpchLabel1, csv_chanlabels));
     end
+    if isempty(iChanMatch1) && ~isempty(chInd1)
+        tmpchLabel1 = strrep(chLabel1, chInd1, ['_' chInd1]);
+        iChanMatch1 = find(strcmpi(tmpchLabel1, csv_chanlabels));
+    end  
     if isempty(iChanMatch2) && ~isempty(chInd2)
         tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
         iChanMatch2 = find(strcmpi(tmpchLabel2, csv_chanlabels));
     end
+    if isempty(iChanMatch2) && ~isempty(chInd2)
+        tmpchLabel2 = strrep(chLabel2, chInd2, ['_' chInd2]);
+        iChanMatch2 = find(strcmpi(tmpchLabel2, csv_chanlabels));
+    end   
     
     %{  
     %% uncomment this section for some datasets
