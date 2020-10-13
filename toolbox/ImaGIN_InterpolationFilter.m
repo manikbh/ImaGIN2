@@ -279,7 +279,7 @@ for i0=1:size(t,1)
             GoodEvent=[];
             for i1=1:length(ev)
                 disp(ev(i1))                
-                if strcmp(EventType,strvcat(ev(i1).type)) && ev(i1).time > timeonset(D)
+                if strcmp(EventType,strvcat(ev(i1).type))
                     GoodEvent=[GoodEvent i1];
                     ind=indsample(D,ev(i1).time);
                     ind1=[ind+4*StartInterpolation];
@@ -389,7 +389,7 @@ for i0=1:size(t,1)
                 n=0;
                 for i1=1:length(ev)
                     %         if ~isempty(intersect(EventType,ev(i1).value))
-                    if strcmp(EventType,ev(i1).type) && ev(i1).time > timeonset(D)
+                    if strcmp(EventType,ev(i1).type)
                         n=n+1;
                         ind=indsample(D,ev(i1).time);
                         ind1=[ind1 ind+StartInterpolation(i2,n)];
@@ -415,7 +415,7 @@ for i0=1:size(t,1)
             PeakMax=0.003;      %Could be defined as argument
             Artefact=[];
             for i1=1:length(ev)
-                if strcmp(EventType,strvcat(ev(i1).type)) && ev(i1).time > timeonset(D)
+                if strcmp(EventType,strvcat(ev(i1).type))
                     T2=indsample(D,S.StartInterpolation+ev(i1).time);
                     T3=indsample(D,S.EndInterpolation+ev(i1).time);
                     T4=indsample(D,PeakMin+ev(i1).time);
@@ -461,7 +461,7 @@ for i0=1:size(t,1)
             %Apply correction
             n=0;
             for i1=1:length(ev)
-                if strcmp(EventType,strvcat(ev(i1).type)) && ev(i1).time > timeonset(D)
+                if strcmp(EventType,strvcat(ev(i1).type))
                     T2=indsample(D,S.StartInterpolation+ev(i1).time);
                     T3=indsample(D,S.EndInterpolation+ev(i1).time);
                     if ~isnan(T3)
