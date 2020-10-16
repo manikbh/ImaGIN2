@@ -100,7 +100,7 @@ for i1=1:NName
         Z=ones(1,101)*Pos(1,3);
     end
     D=sqrt((X-Pos(1,1)).^2+(Y-Pos(1,2)).^2+(Z-Pos(1,3)).^2);
-    NElec=ceil(max(D)/d);
+    NElec=max([ceil(max(D)/d) 1]);
     for i2=1:NElec
         NElectrode=NElectrode+1;
         NameElectrode{NElectrode}=[NameElec{i1} num2str(i2)];

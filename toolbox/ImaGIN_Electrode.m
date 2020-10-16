@@ -174,6 +174,9 @@ for i0 = 1:size(t,1)
             chMatchLog{end+1,1} = Sensors.label{i1};
             chMatchLog{end,2} = Name{iChanPos};
             Sensors.label{i1} = Name{iChanPos};
+            if max(Sensors.chanpos(:))>1 && strcmp(Sensors.unit,'m')
+                Sensors.unit='mm';
+            end
         else
             disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
             chNotFound{end+1} = Sensors.label{i1};
@@ -215,16 +218,18 @@ for i0 = 1:size(t,1)
     end
     
     % Match file: Correspondance between SEEG-CSV-LENA conventions
-    if isfield(S, 'FileTxtOut') && ~isempty(S.FileTxtOut)
-        try
-            fid = fopen(S.FileTxtOut,'w');
-            fprintf(fid,'SEEG,CSV\n');
-            for i = 1:size(chMatchLog,1)
-                fprintf(fid,'%s,%s\n', chMatchLog{i,1}, chMatchLog{i,2});
+    if exist('S','var')
+        if isfield(S, 'FileTxtOut') && ~isempty(S.FileTxtOut)
+            try
+                fid = fopen(S.FileTxtOut,'w');
+                fprintf(fid,'SEEG,CSV\n');
+                for i = 1:size(chMatchLog,1)
+                    fprintf(fid,'%s,%s\n', chMatchLog{i,1}, chMatchLog{i,2});
+                end
+                fclose(fid);
+            catch
+                disp('Log with matched channels names SEEG-CSV not saved.')
             end
-            fclose(fid);
-        catch
-            disp('Log with matched channels names SEEG-CSV not saved.')
         end
     end
     

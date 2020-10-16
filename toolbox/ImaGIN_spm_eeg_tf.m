@@ -279,15 +279,15 @@ if size(DD,1)>1
 end
 
 for i1 = 1:size(DD,1)
-%     try
-%         [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)),S{i1});
-%     catch
-%         try
+    try
+        [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)),S{i1});
+    catch
+        try
             [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)),S);
-%         catch
-%             [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)));
-%         end
-%     end
+        catch
+            [D,TimeWindow,TimeWindowWidth] = ImaGIN_spm_eeg_tf_main(deblank(DD(i1,:)));
+        end
+    end
     if (i1==1) && ~exist('S', 'var')
         S.Method=D.tf.Method;
         switch D.tf.Method
