@@ -116,6 +116,7 @@ for j=1:length(KeepEvent) % Navigate all stim events
     if strcmpi(patientCode(5:end),'REN');noteName = strrep(noteName,'.0','');end%some REN notes    
     if strcmpi(patientCode(5:end),'HUH');noteName = strrep(noteName,'.0','');end%some HUH notes 
     if strcmpi(patientCode(5:end),'TOU');noteName = strrep(noteName,'.0','');end%some TOU notes
+    if strcmpi(patientCode(5:end),'GRE');noteName = strrep(noteName,'.0','');end%some GRE notes
     noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',',''); % /!\ float value becomes integer /!\
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
     noteName = strrep(noteName,'Stim_Start_',''); noteName = strrep(noteName,'Stim_Stop_','');

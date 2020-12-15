@@ -309,9 +309,11 @@ for i0 = 1:size(t,1)
         SpmMat.D.trials.events(iEvt).type = noteNameNew;
         end
     end    
-    SpmMat.D.csv.chanlabels = csv_all_electrodes(:,1); % Add an extra field to the .mat so we have a listing of all channel labels in the csv.
+    csv_struct.csv_labels = csv_all_electrodes(:,1);
+    SpmMat.D.other = csv_struct; % Add an extra field to the .mat so we have a listing of all channel labels in the csv.
     % Update existing .mat file
     save(SpmFile, '-struct', 'SpmMat');
+    save(spm_eeg_load(SpmFile)); % SPM's save to create a valid SPM object
 end
 
 end
