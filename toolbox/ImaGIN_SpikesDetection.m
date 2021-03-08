@@ -194,9 +194,9 @@ function rates_table = spikes_from_monopolar(srate,labels,timeseries,zeroed,coor
     new_sensors_info.type = 'ctf';
     new_sensors_info.unit = 'mm';
     
-    % Create the new files 
-    file_header = fullfile(path_out,['monopolar_baseline_' num2str(srate) 'Hz.mat']);
-    file_data = fullfile(path_out,['monopolar_baseline_' num2str(srate) 'Hz.dat']);    
+    % Create the new files       
+    file_header = fullfile(path_out,['monopolar_baseline_' num2str(round(srate)) 'Hz.mat']);
+    file_data = fullfile(path_out,['monopolar_baseline_' num2str(round(srate)) 'Hz.dat']);    
     if exist(file_header, 'file') == 2
      delete(file_header);      
     end
@@ -206,10 +206,10 @@ function rates_table = spikes_from_monopolar(srate,labels,timeseries,zeroed,coor
     
     % Create the new object    
     D = meeg(size(timeseries,1),size(timeseries,2),1);
-    D = fname(D,['monopolar_baseline_' num2str(srate) 'Hz']);
+    D = fname(D,['monopolar_baseline_' num2str(round(srate)) 'Hz']);
     D = path(D,path_out);
     D = fsample(D,srate); 
-    D = sensors(D,'EEG',new_sensors_info)    
+    D = sensors(D,'EEG',new_sensors_info);  
     D = blank(D) ;
     D = link(D,file_data);   
     D(:,:,1) = timeseries;   
@@ -217,7 +217,7 @@ function rates_table = spikes_from_monopolar(srate,labels,timeseries,zeroed,coor
 
     %% Compute bipolar montage on baseline object to get the bipolar baseline object
     Sbp.Fname = file_header;
-    Sbp.FileOut = fullfile(path_out,['bipolar_baseline_' num2str(srate) 'Hz']);
+    Sbp.FileOut = fullfile(path_out,['bipolar_baseline_' num2str(round(srate)) 'Hz']);
     bp_baseline_obj = ImaGIN_BipolarMontage(Sbp);     
     global_mapping = monopolar_to_bipolar_mapping(Sbp.Fname,path_out);
 
@@ -256,7 +256,7 @@ function rates_table = spikes_from_monopolar(srate,labels,timeseries,zeroed,coor
     spkFile.spikeRate = rates_table;
     spkFile.markers   = spks_table;
     spkFile.baseline  = ['Total duration of ' num2str((nsamples(bp_baseline_obj)/fsample(bp_baseline_obj))/60)  ' minutes'];
-    spkFile.comment   = 'Spike rate is number of spikes per minute whithin a bipolar channel';
+    spkFile.comment   = 'Spike rate is the number of spikes per minute for each bipolar channel';
     results_file = fullfile(path_out,spkFileName);
     save(results_file, 'spkFile');
 end
