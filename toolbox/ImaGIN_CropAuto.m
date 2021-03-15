@@ -369,8 +369,16 @@ for c = 1:length(KeepEvent) % Navigate all stim events
             xsub2 = cellstr(xsub2);
             S.StimFreq = 1;
             StimFreq = 1;
-        else
-            StimFreq=str2double(xsub2{1}(1:end-2));
+        else           
+            % We assume a leading 0 implies a stimulation frequency <1 (e.g. 026 -> 0.26).
+            % Only used for the detection of stimulations (ImaGIN_StimDetect.m) Boyer.A 25/08/2020
+            freq_string = xsub2{1}(1:end-2);
+            match_freq = regexp(freq_string,'^0+(?<value>[0-9]+)$','once','names');
+            if ~isempty(match_freq)
+                StimFreq=str2double(['0.' match_freq.value]);
+            else
+                StimFreq=str2double(freq_string);
+            end            
             S.StimFreq = StimFreq;
         end
         xsub3 = regexp(noteName,rxp3,'match');
@@ -475,7 +483,7 @@ for c = 1:length(KeepEvent) % Navigate all stim events
     S.FileOut=  fullfile(DirOut, strcat(noteNameNew,'.txt'));   
 
     mat_file = load(sFile);
-    csv_chanlabels = mat_file.D.csv.chanlabels; % This new field is generated during the Electrode step so the .mat stores the channel labels found in the csv 
+    csv_chanlabels = mat_file.D.other.csv_labels; % This new field is generated during the Electrode step so the .mat stores the channel labels found in the csv 
     
     iChanMatch1 = find(strcmpi(chLabel1, csv_chanlabels));
     iChanMatch2 = find(strcmpi(chLabel2, csv_chanlabels));
@@ -484,10 +492,18 @@ for c = 1:length(KeepEvent) % Navigate all stim events
         tmpchLabel1 = strrep(chLabel1, chInd1, num2str(str2double(chInd1)));
         iChanMatch1 = find(strcmpi(tmpchLabel1, csv_chanlabels));
     end
+    if isempty(iChanMatch1) && ~isempty(chInd1)
+        tmpchLabel1 = strrep(chLabel1, chInd1, ['_' chInd1]);
+        iChanMatch1 = find(strcmpi(tmpchLabel1, csv_chanlabels));
+    end  
     if isempty(iChanMatch2) && ~isempty(chInd2)
         tmpchLabel2 = strrep(chLabel2, chInd2, num2str(str2double(chInd2)));
         iChanMatch2 = find(strcmpi(tmpchLabel2, csv_chanlabels));
     end
+    if isempty(iChanMatch2) && ~isempty(chInd2)
+        tmpchLabel2 = strrep(chLabel2, chInd2, ['_' chInd2]);
+        iChanMatch2 = find(strcmpi(tmpchLabel2, csv_chanlabels));
+    end   
     
     %{  
     %% uncomment this section for some datasets

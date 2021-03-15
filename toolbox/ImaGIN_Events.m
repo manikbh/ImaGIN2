@@ -140,10 +140,16 @@ function D=ImaGIN_EventsAdd_Subfunction(Filename,NewName,Timing,NeventNew)
     n=NeventOld;
     for i0=1:NeventNew
         for i1=1:length(Timing{i0})
-            n=n+1;
-            evt(n).type  = NewName{i0};
-            evt(n).time  = Timing{i0}(i1);
-            evt(n).value = NeventOld+i0;
+            % When 2 stimulations are particularly close to each other
+            % ImaGIN_StimDetect may detect a few stimulation artefacts (the "Timing" variable) which are
+            % out of the bounds of the current crop. Those artefacts should not be added as stimulation events.
+            % Boyer.A 06/10/2020
+            if Timing{i0}(i1) > timeonset(D)
+                n=n+1;
+                evt(n).type  = NewName{i0};
+                evt(n).time  = Timing{i0}(i1);
+                evt(n).value = NeventOld+i0;                
+            end   
         end
         % Add log entry
         ImaGIN_save_log(fullfile(D), sprintf('Added %dx event %s', length(Timing{i0}), NewName{i0}));

@@ -787,7 +787,7 @@ if length(stimulation)>1
     remove=[];
     for i1=1:length(stimulation)
         difftmp=abs(stimulation-stimulation(i1));
-        if isempty(find(difftmp>0.9*Stim & difftmp<1.1*Stim,1))
+        if isempty(find(difftmp>0.6*Stim & difftmp<1.4*Stim,1))
             remove=[remove i1];
         end
     end
@@ -797,7 +797,7 @@ end
 
 %remove isolated stimulations (short clusters)
 dstimulation=diff(stimulation);
-index = find(dstimulation>=1.1*Stim);
+index = find(dstimulation>=1.4*Stim);
 if ~isempty(index)
     index = unique([1 index+1 length(stimulation)+1]);
     dindex = diff(index);

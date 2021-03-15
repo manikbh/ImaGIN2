@@ -135,7 +135,7 @@ for i0 = 1:size(t,1)
         sensLtmp = Sensors.label{i1};
         sensLtmp(ismember(double(sensLtmp),[',' ';' '-'])) ='';
         Sensors.label{i1} = sensLtmp;
-        iChanPos = findChannel(Sensors.label{i1}, Name);
+        iChanPos = findChannel(Sensors.label{i1}, Name, 'all_upper');
         % If the channel was already found in the list before: check the best option based on the case
         if ~isempty(iChanPos) && ~isempty(chMatchLog)
             iPrevious = find(strcmp(Name{iChanPos}, chMatchLog(:,2)));
@@ -145,20 +145,9 @@ for i0 = 1:size(t,1)
                    (any(Sensors.label{i1} == '''') && strcmp(strrep(upper(Sensors.label{i1}), '''', 'p'), Name{iChanPos}))
                     disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} ' discarded.']);
                     chMatchLog(iPrevious,:) = [];                
-                % If both labels are the same regardless of the case, pick the one with uppercase (intra-recording).
+                % If both labels are the same regardless of the case, raises an error.
                 elseif strcmpi(chMatchLog{iPrevious,1},Sensors.label{i1})
-                    uppercase_label = find([sum(isstrprop(chMatchLog{iPrevious,1},'upper'))>0 sum(isstrprop(Sensors.label{i1},'upper'))>0]);
-                    if numel(uppercase_label) == 1
-                        disp(['ImaGIN> WARNING: Channel name conflict: ' Sensors.label{i1} ' matched with ' Name{iChanPos} ', ' chMatchLog{iPrevious,1} ' discarded.']);
-                        % Rename the scalp electrode and remove the coordinates                         
-                        scalp_idx = find(strcmp(SpmMat.D.sensors.eeg.label,chMatchLog{iPrevious,1}));
-                        Sensors.elecpos(scalp_idx,:) = nan(1,3);
-                        Sensors.chanpos(scalp_idx,:) = nan(1,3);
-                        Sensors.label{scalp_idx} = ['SCALP' Sensors.label{scalp_idx}];                        
-                        chMatchLog(iPrevious,:) = [];                        
-                    else
-                        error(['Duplicated label found: ' Sensors.label{i1}]);
-                    end                    
+                    error(['Duplicated label found: ' Sensors.label{i1}]);                                        
                 else
                     disp(['ImaGIN> WARNING: Channel name conflict: ' chMatchLog{iPrevious,1} ' matched with ' Name{iChanPos} ', ' Sensors.label{i1} ' discarded.']);
                     iChanPos = [];
@@ -173,10 +162,14 @@ for i0 = 1:size(t,1)
             % Copy channel name from input name file (ADDED BY FT 5-Oct-2018)
             chMatchLog{end+1,1} = Sensors.label{i1};
             chMatchLog{end,2} = Name{iChanPos};
+<<<<<<< HEAD
             Sensors.label{i1} = Name{iChanPos};
             if max(Sensors.chanpos(:))>1 && strcmp(Sensors.unit,'m')
                 Sensors.unit='mm';
             end
+=======
+            Sensors.label{i1} = strrep(Name{iChanPos},'-','');
+>>>>>>> c4081fa6f23394f3f85ab37ca70e4f12c0752677
         else
             disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
             chNotFound{end+1} = Sensors.label{i1};
@@ -325,9 +318,11 @@ for i0 = 1:size(t,1)
         SpmMat.D.trials.events(iEvt).type = noteNameNew;
         end
     end    
-    SpmMat.D.csv.chanlabels = csv_all_electrodes(:,1); % Add an extra field to the .mat so we have a listing of all channel labels in the csv.
+    csv_struct.csv_labels = csv_all_electrodes(:,1);
+    SpmMat.D.other = csv_struct; % Add an extra field to the .mat so we have a listing of all channel labels in the csv.
     % Update existing .mat file
     save(SpmFile, '-struct', 'SpmMat');
+    save(spm_eeg_load(SpmFile)); % SPM's save to create a valid SPM object
 end
 
 end
@@ -406,6 +401,8 @@ function iChanPos = findChannel(Label, List, caseType)
     
     % Remove spaces
     Label(Label == ' ') = [];
+    % Remove spaces
+    List = strrep(List,'-','');    
     % Switch case type
     switch (caseType)
         case 'no_change'

@@ -278,6 +278,7 @@ for i0=1:size(t,1)
             indexint=[4*StartInterpolation:4*EndInterpolation];
             GoodEvent=[];
             for i1=1:length(ev)
+                disp(ev(i1))                
                 if strcmp(EventType,strvcat(ev(i1).type))
                     GoodEvent=[GoodEvent i1];
                     ind=indsample(D,ev(i1).time);

@@ -101,14 +101,23 @@ for c=1:evsize % Navigate all available events
 end
 for j=1:length(KeepEvent) % Navigate all stim events
     noteName = char(Notes{KeepEvent(j)});
-    tmp=find(noteName==','); if ~isempty(tmp);if noteName(tmp(1)-3)=='-'; noteName(tmp(1))=' ';end;end%BUC
+    tmp=find(noteName==',');
+    if ~isempty(tmp) && strcmpi(patientCode(5:end),'BUC')
+        if noteName(tmp(1)-3)=='-';
+            noteName(tmp(1))=' ';
+        end
+    end%BUC     
     noteName = regexprep(noteName,',','.');%BUC
     noteName = strrep(noteName, ' ','_');
     noteName = regexprep(noteName,'�','u'); %OD
     noteName(~ismember(double(noteName),['A':'Z' 'a':'z' '_' '.' '''' 'µ' '-' '0':'9'])) ='';
     noteName = regexprep(noteName,'_+','_'); noteName = regexprep(noteName,'µ','u');    
     if strcmpi(patientCode(5:end),'MIL');noteName = strrep(noteName,'.0',''); noteName = strrep(noteName,'_MA_','_');end%some MIL notes
-    noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',','');
+    if strcmpi(patientCode(5:end),'REN');noteName = strrep(noteName,'.0','');end%some REN notes    
+    if strcmpi(patientCode(5:end),'HUH');noteName = strrep(noteName,'.0','');end%some HUH notes 
+    if strcmpi(patientCode(5:end),'TOU');noteName = strrep(noteName,'.0','');end%some TOU notes
+    if strcmpi(patientCode(5:end),'GRE');noteName = strrep(noteName,'.0','');end%some GRE notes
+    noteName = strrep(noteName,'.',''); noteName = strrep(noteName,',',''); % /!\ float value becomes integer /!\
     noteName = strrep(noteName,'sec','s');  noteName = strrep(noteName,'AA','A');
     noteName = strrep(noteName,'Stim_Start_',''); noteName = strrep(noteName,'Stim_Stop_','');
     noteName = strrep(noteName,'stim',''); noteName = strrep(noteName,'Stim','');
