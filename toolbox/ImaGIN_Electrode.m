@@ -162,7 +162,7 @@ for i0 = 1:size(t,1)
             % Copy channel name from input name file (ADDED BY FT 5-Oct-2018)
             chMatchLog{end+1,1} = Sensors.label{i1};
             chMatchLog{end,2} = Name{iChanPos};
-            Sensors.label{i1} = strrep(Name{iChanPos},'-','');
+            Sensors.label{i1} = Name{iChanPos};
         else
             disp(['ImaGIN> WARNING: ' Sensors.label{i1} ' not assigned']);
             chNotFound{end+1} = Sensors.label{i1};
@@ -392,8 +392,6 @@ function iChanPos = findChannel(Label, List, caseType)
     
     % Remove spaces
     Label(Label == ' ') = [];
-    % Remove spaces
-    List = strrep(List,'-','');    
     % Switch case type
     switch (caseType)
         case 'no_change'
